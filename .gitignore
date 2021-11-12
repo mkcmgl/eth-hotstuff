@@ -19,3 +19,12 @@ build/
 
 # MacOS cache
 .DS_Store
+
+.idea
+
+data
+.vscode
+geth.config
+
+nnhot-harmony.json
+nnhot.json

@@ -54,6 +54,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
+	"go.dedis.ch/kyber/v3/pairing/bn256"
 )
 
 type LesServer interface {
@@ -272,6 +273,11 @@ func CreateConsensusEngine(ctx *node.ServiceContext, chainConfig *params.ChainCo
 		}
 		config.HotStuff.Test = chainConfig.HotStuff.Test
 		config.HotStuff.BlockPeriod = chainConfig.HotStuff.Period
+		fmt.Println("chainConfig.HotStuff.Suite = ", chainConfig.HotStuff.Suite)
+
+		if chainConfig.HotStuff.Suite == nil {
+			chainConfig.HotStuff.Suite = bn256.NewSuite()
+		}
 		config.HotStuff.Suite = chainConfig.HotStuff.Suite
 		config.HotStuff.SpeakerPolicy = hotstuff.SpeakerPolicy(chainConfig.HotStuff.SpeakerPolicy)
 		return hotStuffBackend.New(&config.HotStuff, ctx.NodeKey(), db)

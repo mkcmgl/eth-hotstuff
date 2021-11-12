@@ -115,7 +115,7 @@ type StateDB struct {
 	SnapshotCommits      time.Duration
 }
 
-// Create a new state from a given trie.
+// Create a new state from a given trie. /从给定的trie创建新状态。
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
 	if err != nil {
@@ -760,11 +760,11 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	s.clearJournalAndRefund()
 }
 
-// IntermediateRoot computes the current root hash of the state trie.
-// It is called in between transactions to get the root hash that
-// goes into transaction receipts.
+// IntermediateRoot computes the current root hash of the state trie. 计算状态trie的当前根哈希。
+// It is called in between transactions to get the root hash that 在事务之间调用它以获取
+// goes into transaction receipts. //进入交易凭证。
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
-	// Finalise all the dirty storage states and write them into the tries
+	// Finalise all the dirty storage states and write them into the tries /确定所有脏存储状态，并将其写入存储区
 	s.Finalise(deleteEmptyObjects)
 
 	for addr := range s.stateObjectsPending {

@@ -21,6 +21,7 @@ package backend
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	// "io"
 	"math/big"
@@ -228,6 +229,9 @@ func (h *backend) verifyHeader(chain consensus.ChainReader, header *types.Header
 
 	// Ensure that the extra data format is satisfied
 	if _, err := types.ExtractHotStuffExtra(header); err != nil {
+		fmt.Println("--------------header-------------", header)
+		fmt.Println("--------header.Extra-----", header.Extra[:])
+		fmt.Println("---------------err:---------------", err)
 		return errInvalidExtraDataFormat
 	}
 

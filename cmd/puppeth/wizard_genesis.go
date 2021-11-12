@@ -34,7 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
-	"go.dedis.ch/kyber/v3/pairing/bn256"
+	//"go.dedis.ch/kyber/v3/pairing/bn256"
 )
 
 // makeGenesis creates a new genesis struct based on some user input.
@@ -113,8 +113,8 @@ func (w *wizard) makeGenesis() {
 		// In the case of HotStuff, configure the consensus parameters
 		genesis.Difficulty = big.NewInt(1)
 		genesis.Config.HotStuff = &params.HotStuffConfig{
-			Period:        5,
-			Suite:         bn256.NewSuite(),
+			Period: 5,
+			//Suite:         &bn256.Suite{},
 			SpeakerPolicy: 0, // RoundRobin by default
 		}
 
