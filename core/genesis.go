@@ -273,6 +273,43 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		}
 	}
 	root := statedb.IntermediateRoot(false)
+	var signerAmount int = (len(g.ExtraData) - types.HotStuffExtraVanity - types.HotStuffExtraSeal) / common.AddressLength
+	hotstuffExtra := new(types.HotStuffExtra)
+	hotstuffExtra.Validators = make([]common.Address, signerAmount)
+
+	for i := 0; i < signerAmount; i++ {
+
+		start := types.HotStuffExtraVanity + i*common.AddressLength
+		temp := make([]byte, common.AddressLength)
+		copy(temp, g.ExtraData[start:start+common.AddressLength])
+		hotstuffExtra.Validators[i] = common.BytesToAddress(temp)
+		if i == 0 {
+			hotstuffExtra.SpeakerAddr = common.BytesToAddress(temp)
+		}
+	}
+
+	hotstuffExtra.Mask = []byte{}
+	hotstuffExtra.AggregatedKey = []byte{}
+	hotstuffExtra.AggregatedSig = []byte{}
+	hotstuffExtra.Seal = []byte{}
+	payload, err := rlp.EncodeToBytes(&hotstuffExtra)
+	if err != nil {
+		panic(err)
+	}
+
+	extraBytes := make([]byte, types.HotStuffExtraVanity+len(payload))
+
+	for i := 0; i < len(payload); i++ {
+		extraBytes[types.HotStuffExtraVanity+i] = payload[i]
+	}
+
+	var hotStuffExtra1 *types.HotStuffExtra
+	err1 := rlp.DecodeBytes(extraBytes[types.HotStuffExtraVanity:], &hotStuffExtra1)
+	if err1 != nil {
+		panic(err1)
+	}
+
+	fmt.Println("hotStuffExtra1 int to block = ", hotStuffExtra1)
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
 		Nonce:      types.EncodeNonce(g.Nonce),
@@ -282,7 +319,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		GasLimit:   g.GasLimit,
 		GasUsed:    g.GasUsed,
 		Difficulty: g.Difficulty,
-		MixDigest:  g.Mixhash,
+		MixDigest:  types.HotStuffDigest,
 		Coinbase:   g.Coinbase,
 		Root:       root,
 	}
