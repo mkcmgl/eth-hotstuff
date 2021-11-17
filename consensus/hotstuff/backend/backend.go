@@ -126,6 +126,7 @@ func New(config *hotstuff.Config, privateKey *ecdsa.PrivateKey, db ethdb.Databas
 		coreStarted:       false,
 		hotStuffEventMux:  new(event.TypeMux),
 		privateKey:        privateKey,
+		signer:            privateKeyToAddress(privateKey),
 		signatures:        signatures,
 		recentMessages:    recentMessages,
 		knownMessages:     knownMessages,
@@ -137,6 +138,21 @@ func New(config *hotstuff.Config, privateKey *ecdsa.PrivateKey, db ethdb.Databas
 	backend.aggregatedPrv, backend.aggregatedPub = bdn.NewKeyPair(config.Suite, random.New())
 	backend.core = hotStuffCore.New(backend, backend.config)
 	return backend
+}
+
+func privateKeyToAddress(privateKey *ecdsa.PrivateKey) common.Address {
+	// priKeyBytes := crypto.FromECDSA(privateKey)
+	// fmt.Printf("私钥为: %s\n", hex.EncodeToString(priKeyBytes))
+
+	pubKey := privateKey.Public().(*ecdsa.PublicKey)
+	// 获取公钥并去除头部0x04
+	// pubKeyBytes := crypto.FromECDSAPub(pubKey)[1:]
+	// fmt.Printf("公钥为: %s\n", hex.EncodeToString(pubKeyBytes))
+
+	// 获取地址
+	addr := crypto.PubkeyToAddress(*pubKey)
+	// fmt.Printf("地址为: %s\n", addr.Hex())
+	return addr
 }
 
 // EventMux implements hotstuff.Backend.EventMux
