@@ -202,6 +202,7 @@ func (h *backend) VerifyHeaders(chain consensus.ChainReader, headers []*types.He
 	go func() {
 		for i, header := range headers {
 			err := h.verifyHeader(chain, header, headers[:i])
+			fmt.Println("---------------VerifyHeaders:---------------", err)
 
 			select {
 			case <-abort:
@@ -419,6 +420,7 @@ func (h *backend) Prepare(chain consensus.ChainReader, header *types.Header) err
 	// Assemble the voting snapshot
 	snap, err := h.snapshot(chain, number-1, header.ParentHash, nil)
 	if err != nil {
+		fmt.Println("-------snapshot:", err)
 		return err
 	}
 
@@ -445,7 +447,9 @@ func (h *backend) Prepare(chain consensus.ChainReader, header *types.Header) err
 	// add validators in snapshot to extraData's validators section
 	extra, err := prepareExtra(header, h.Address(), nil)
 	if err != nil {
+		fmt.Println("++++++++++prepareExtra:", err)
 		return err
+
 	}
 	header.Extra = extra
 
