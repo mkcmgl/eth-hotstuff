@@ -382,7 +382,7 @@ func (p *Peer) startProtocols(writeStart <-chan struct{}, writeErr chan<- error)
 // the given message code.
 func (p *Peer) getProto(code uint64) (*protoRW, error) {
 	for _, proto := range p.running {
-		if code >= proto.offset && code < proto.offset+proto.Length {
+		if code >= proto.offset && code <= proto.offset+proto.Length {
 			return proto, nil
 		}
 	}
@@ -400,7 +400,7 @@ type protoRW struct {
 }
 
 func (rw *protoRW) WriteMsg(msg Msg) (err error) {
-	if msg.Code >= rw.Length {
+	if msg.Code > rw.Length {
 		return newPeerError(errInvalidMsgCode, "not handled")
 	}
 	msg.meterCap = rw.cap()
