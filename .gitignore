@@ -23,8 +23,11 @@ build/
 .idea
 
 data
+data2
 .vscode
 geth.config
 
 nnhot-harmony.json
 nnhot.json
+start.sh
+start2.sh
