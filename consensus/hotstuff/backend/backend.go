@@ -22,7 +22,10 @@ import (
 	// "bytes"
 	// "errors"
 	// "io"
+	//"encoding/hex"
+	//"fmt"
 	"math/big"
+
 	// "runtime"
 	// "strconv"
 	"crypto/ecdsa"
@@ -145,13 +148,13 @@ func privateKeyToAddress(privateKey *ecdsa.PrivateKey) common.Address {
 	// fmt.Printf("私钥为: %s\n", hex.EncodeToString(priKeyBytes))
 
 	pubKey := privateKey.Public().(*ecdsa.PublicKey)
-	// 获取公钥并去除头部0x04
+	// // 获取公钥并去除头部0x04
 	// pubKeyBytes := crypto.FromECDSAPub(pubKey)[1:]
 	// fmt.Printf("公钥为: %s\n", hex.EncodeToString(pubKeyBytes))
 
 	// 获取地址
 	addr := crypto.PubkeyToAddress(*pubKey)
-	// fmt.Printf("地址为: %s\n", addr.Hex())
+	//	fmt.Printf("地址为: %s\n", addr.Hex())
 	return addr
 }
 

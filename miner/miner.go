@@ -120,13 +120,16 @@ func (miner *Miner) update() {
 }
 
 func (miner *Miner) Start(coinbase common.Address) {
+	fmt.Println("------------start11111111111111111111111-----")
 	atomic.StoreInt32(&miner.shouldStart, 1)
+	fmt.Println("------------start22222222222222222222221-----")
 	miner.SetEtherbase(coinbase)
-
+	fmt.Println("------------start3333333333333333333333333-----")
 	if atomic.LoadInt32(&miner.canStart) == 0 {
 		log.Info("Network syncing, will start miner afterwards")
 		return
 	}
+	fmt.Println("------------start444444444444444444444444-----")
 	miner.worker.start()
 }
 

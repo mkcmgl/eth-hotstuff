@@ -308,7 +308,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if err1 != nil {
 		panic(err1)
 	}
-
+	fmt.Println("-------------extraBytes[types.HotStuffExtraVanity:], int to block = ", extraBytes[types.HotStuffExtraVanity:])
 	fmt.Println("hotStuffExtra1 int to block = ", hotStuffExtra1)
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),

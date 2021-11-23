@@ -18,6 +18,7 @@ package types
 
 import (
 	"errors"
+	//"fmt"
 	"io"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -89,13 +90,46 @@ func ExtractHotStuffExtra(h *Header) (*HotStuffExtra, error) {
 	if len(h.Extra) < HotStuffExtraVanity {
 		return nil, ErrInvalidHotStuffHeaderExtra
 	}
+	var signerAmount int = (len(h.Extra) - HotStuffExtraVanity - HotStuffExtraSeal) / common.AddressLength
+	hotstuffExtra := new(HotStuffExtra)
+	hotstuffExtra.Validators = make([]common.Address, signerAmount)
 
-	var hotStuffExtra *HotStuffExtra
-	err := rlp.DecodeBytes(h.Extra[HotStuffExtraVanity:], &hotStuffExtra)
-	if err != nil {
-		return nil, err
+	for i := 0; i < signerAmount; i++ {
+
+		start := HotStuffExtraVanity + i*common.AddressLength
+		temp := make([]byte, common.AddressLength)
+		copy(temp, h.Extra[start:start+common.AddressLength])
+		hotstuffExtra.Validators[i] = common.BytesToAddress(temp)
+		if i == 0 {
+			hotstuffExtra.SpeakerAddr = common.BytesToAddress(temp)
+		}
 	}
-	return hotStuffExtra, nil
+
+	hotstuffExtra.Mask = []byte{}
+	hotstuffExtra.AggregatedKey = []byte{}
+	hotstuffExtra.AggregatedSig = []byte{}
+	hotstuffExtra.Seal = []byte{}
+	payload, err := rlp.EncodeToBytes(&hotstuffExtra)
+	if err != nil {
+		panic(err)
+	}
+
+	extraBytes := make([]byte, HotStuffExtraVanity+len(payload))
+
+	for i := 0; i < len(payload); i++ {
+		extraBytes[HotStuffExtraVanity+i] = payload[i]
+	}
+
+	var hotStuffExtra1 *HotStuffExtra
+
+	err1 := rlp.DecodeBytes(extraBytes[HotStuffExtraVanity:], &hotStuffExtra1)
+	//fmt.Println("h.Extra[HotStuff        ExtraVanity:] int to block = ", h.Extra[HotStuffExtraVanity:])
+	//fmt.Println("hotStuffExtra1           1int to block = ", hotStuffExtra1)
+	if err1 != nil {
+		panic(err1)
+	}
+
+	return hotStuffExtra1, nil
 }
 
 // HotStuffFilteredHeader returns a filtered header which some information (like seal, validators set)

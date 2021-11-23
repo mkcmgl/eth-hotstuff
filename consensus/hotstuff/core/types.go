@@ -132,6 +132,7 @@ func (m *message) FromPayload(b []byte, validateFn func([]byte, []byte) (common.
 	// Decode message
 	err := rlp.DecodeBytes(b, &m)
 	if err != nil {
+		//	fmt.Println(" 	err := rlp.DecodeBytes(b, &m):++++  ", err)
 		return err
 	}
 
@@ -140,11 +141,17 @@ func (m *message) FromPayload(b []byte, validateFn func([]byte, []byte) (common.
 		var payload []byte
 		payload, err = m.PayloadNoSig()
 		if err != nil {
+			//fmt.Println("		payload, err = m.PayloadNoSig()++", err)
 			return err
 		}
 
 		signerAdd, err := validateFn(payload, m.Signature)
+		//fmt.Println("		??????                         payload)", payload)
+		//fmt.Println("		?????????                m.Signature)", m.Signature)
+		//fmt.Println("		??????                         signerAdd)", signerAdd)
 		if err != nil {
+			//fmt.Println("		signerAdd, err := validateFn(payload, m.Signature)++", err)
+
 			return err
 		}
 		if !bytes.Equal(signerAdd.Bytes(), m.Address.Bytes()) {

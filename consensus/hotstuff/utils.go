@@ -21,6 +21,8 @@ import (
 	"container/list"
 	"errors"
 
+	//	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
@@ -45,6 +47,7 @@ func GetSignatureAddress(data []byte, sig []byte) (common.Address, error) {
 		return common.Address{}, err
 	}
 	return crypto.PubkeyToAddress(*pubkey), nil
+
 }
 
 func CheckValidatorSignature(valSet ValidatorSet, data []byte, sig []byte) (common.Address, error) {
@@ -52,13 +55,17 @@ func CheckValidatorSignature(valSet ValidatorSet, data []byte, sig []byte) (comm
 	signer, err := GetSignatureAddress(data, sig)
 	if err != nil {
 		log.Error("Failed to get signer address", "err", err)
+		//fmt.Println("		??????                         common.Address{})", common.Address{})
 		return common.Address{}, err
 	}
-
-	// 2. Check validator
+	//fmt.Println("		??????                   GetSignatureAddress      data", data)
+	//fmt.Println("		??????                   GetSignatureAddress      sig", sig)
+	//fmt.Println("		??????                   GetSignatureAddress      signer", signer)
+	//fmt.Println("		??????                   GetSignatureAddress      valSet", valSet)
 	if _, val := valSet.GetByAddress(signer); val != nil {
 		return val.Address(), nil
 	}
+	//fmt.Println("		??????                   GetByAddress      common.Address{})", common.Address{})
 
 	return common.Address{}, ErrUnauthorizedAddress
 }

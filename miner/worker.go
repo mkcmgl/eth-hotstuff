@@ -19,6 +19,7 @@ package miner
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -37,11 +38,11 @@ import (
 )
 
 const (
-	// resultQueueSize is the size of channel listening to sealing result.
+	// resultQueueSize is the size of channel listening to sealing result.//ResultQueSize是侦听密封结果的通道的大小。
 	resultQueueSize = 10
 
-	// txChanSize is the size of channel listening to NewTxsEvent.
-	// The number is referenced from the size of tx pool.
+	// txChanSize is the size of channel listening to NewTxsEvent. /txChanSize是侦听事件的通道的大小。
+	// The number is referenced from the size of tx pool./该数字是从tx池的大小中引用的。
 	txChanSize = 4096
 
 	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
@@ -276,12 +277,15 @@ func (w *worker) pendingBlock() *types.Block {
 // start sets the running status as 1 and triggers new work submitting.
 func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
+	fmt.Println("------------atomic.StoreInt32(&w.running, 1)111111111111-----")
 	// BLS-Upgrade: Start the engine
 	if hotStuff, ok := w.engine.(consensus.HotStuff); ok {
 		hotStuff.Start(w.chain, w.chain.CurrentBlock, w.chain.HasBadBlock)
 	}
 	// /BLS-Upgrade
+	fmt.Println("------------ hotStuff, ok := w.engine.222222222222222222222-----")
 	w.startCh <- struct{}{}
+	fmt.Println("------------ w.startCh222222222222222222222-----", w.startCh)
 }
 
 // stop sets the running status as 0.

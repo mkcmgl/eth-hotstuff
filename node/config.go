@@ -371,6 +371,7 @@ func (c *Config) NodeKey() *ecdsa.PrivateKey {
 	}
 
 	keyfile := c.ResolvePath(datadirPrivateKey)
+
 	if key, err := crypto.LoadECDSA(keyfile); err == nil {
 		return key
 	}

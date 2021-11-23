@@ -17,6 +17,8 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/hotstuff"
 )
@@ -148,6 +150,7 @@ func (c *core) handleMsg(payload []byte) error {
 	// Decode message and check its signature
 	msg := new(message)
 	if err := msg.FromPayload(payload, c.validateFn); err != nil {
+		fmt.Println("		msg.FromPayload                        payload)", payload)
 		logger.Error("Failed to decode message from payload", "err", err)
 		return err
 	}

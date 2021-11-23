@@ -720,7 +720,7 @@ func (h *backend) snapshot(chain consensus.ChainReader, number uint64, hash comm
 			snap = s.(*Snapshot)
 			break
 		}
-		// If an on-disk checkpoint snapshot can be found, use that
+		// If an on-disk checkpoint snapshot can be found, use that 如果可以找到磁盘上的检查点快照，请使用该快照
 		if number%checkpointInterval == 0 {
 			if s, err := loadSnapshot(h.config.Epoch, h.db, hash); err == nil {
 				h.logger.Trace("Loaded voting snapshot form disk", "number", number, "hash", hash)
@@ -728,10 +728,13 @@ func (h *backend) snapshot(chain consensus.ChainReader, number uint64, hash comm
 				break
 			}
 		}
-		// If we're at block zero, make a snapshot
+		// If we're at block zero, make a snapshot 如果我们在块零，做一个快照
 		if number == 0 {
 			genesis := chain.GetHeaderByNumber(0)
+			// fmt.Println("............................................chain:", chain)
+			// fmt.Println("............................................genesis:", genesis)
 			if err := h.VerifyHeader(chain, genesis, false); err != nil {
+				// fmt.Println("............................................VerifyHeader:", err)
 				return nil, err
 			}
 			hotStuffExtra, err := types.ExtractHotStuffExtra(genesis)
