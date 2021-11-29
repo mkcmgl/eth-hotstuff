@@ -17,6 +17,7 @@
 package core
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -24,14 +25,16 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/hotstuff"
 )
 
-// sendNextRoundChange sends the ROUND CHANGE message with current round + 1
+// sendNextRoundChange sends the ROUND CHANGE message with current round + 1 发送当前回合+1的回合更改消息
 func (c *core) sendNextRoundChange() {
+	fmt.Println("-------------sendNextRoundChange-------------------")
 	cv := c.currentView()
 	c.sendRoundChange(new(big.Int).Add(cv.Round, common.Big1))
 }
 
-// sendRoundChange sends the ROUND CHANGE message with the given round
+// sendRoundChange sends the ROUND CHANGE message with the given round //sendRoundChange使用给定的回合发送回合更改消息
 func (c *core) sendRoundChange(round *big.Int) {
+	fmt.Println("----------------sendRoundChange--------------------------")
 	logger := c.logger.New("state", c.state)
 
 	cv := c.currentView()
@@ -40,16 +43,16 @@ func (c *core) sendRoundChange(round *big.Int) {
 		return
 	}
 
-	// Reset ROUND CHANGE timeout timer with new round number
+	// Reset ROUND CHANGE timeout timer with new round number 使用新的轮号重置轮更改超时计时器
 	c.catchUpRound(&hotstuff.View{
-		// The round number we'd like to transfer to.
+		// The round number we'd like to transfer to./我们要转到的整数。
 		Round: new(big.Int).Set(round),
-		// TODO: Need to check if (height - 1) is right
-		// Height: new(big.Int).Set(cv.Height),
+		// TODO: Need to check if (height - 1) is right //TODO:需要检查（高度-1）是否正确
+		// Height: new(big.Int).Set(cv.Height), /高度：新建（大整数）。设置（等高线高度），
 		Height: new(big.Int).Sub(cv.Height, common.Big1),
 	})
 
-	// Now we have the new round number and block height number
+	// Now we have the new round number and block height number //现在我们有了新的轮数和方块高度数
 	cv = c.currentView()
 
 	rc := &hotstuff.Subject{

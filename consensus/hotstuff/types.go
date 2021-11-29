@@ -29,7 +29,7 @@ import (
 // Proposal supports retrieving height and serialized block to be used during HotStuff consensus.
 // It is the interface that abstracts different message structure. (consensus/hotstuff/core/core.go)
 type Proposal interface {
-	// Number retrieves the block height number of this proposal.
+	// Number retrieves the block height number of this proposal. 编号检索此方案的区块高度编号
 	Number() *big.Int
 
 	// Hash retrieves the hash of this proposal.

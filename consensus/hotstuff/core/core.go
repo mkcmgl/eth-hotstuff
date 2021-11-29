@@ -18,6 +18,7 @@ package core
 
 import (
 	// "bytes"
+	"fmt"
 	"math"
 	"math/big"
 	"sync"
@@ -226,7 +227,9 @@ func (c *core) commit(roundChange bool, round *big.Int) {
 		if proposal != nil {
 			for _, msg := range c.current.Responses.Values() {
 				if msg.Code == msgResponse {
+
 					// Notes: msg.AggPub and msg.AggSign are assigned by calling core.go/finalizeMessage at the delegators' sides
+
 					collectionPub[msg.Address], collectionSig[msg.Address] = msg.AggPub, msg.AggSign
 				}
 			}
@@ -248,10 +251,12 @@ func (c *core) commit(roundChange bool, round *big.Int) {
 					collectionPub[msg.Address], collectionSig[msg.Address] = msg.AggPub, msg.AggSign
 				}
 			}
+			fmt.Println("core.go 254           c.backend.Commit    ")
 			if err := c.backend.Commit(proposal.(hotstuff.Proposal), c.valSet, collectionPub, collectionSig); err != nil {
 				c.sendNextRoundChange()
 				return
 			}
+			fmt.Println("core.go 259          c.backend.Commit    ")
 
 		}
 
@@ -358,20 +363,26 @@ func (c *core) catchUpRound(view *hotstuff.View) {
 	logger.Trace("Catch up round", "new_round", view.Round, "new_height", view.Height, "new_speaker", c.valSet)
 }
 
-// updateRoundState updates round state
+// updateRoundState updates round state 更新循环状态
 func (c *core) updateRoundState(view *hotstuff.View, validatorSet hotstuff.ValidatorSet, roundChange bool) {
 	if roundChange && c.current != nil {
-		// Hotstuff view change replacing pendingRequest
+		// Hotstuff view change replacing pendingRequest /Hotstuff视图更改替换挂起请求
 		if !c.pendingRequestsUnconfirmedQueue.Empty() {
 			proposal, err := c.pendingRequestsUnconfirmedQueue.GetFirst()
+			fmt.Println("///////////proposal///////////", proposal)
+			fmt.Println("///////////err///////////", err)
 			if err != nil {
 				c.logger.Trace("Invalid unconfirmed queue")
 				return
 			} else {
+				fmt.Println("*****************r := &hotstuff.Request****************")
 				r := &hotstuff.Request{
+
 					Proposal: proposal.(hotstuff.Proposal),
 				}
+				fmt.Println("-..3333333333333333333333333333333333")
 				c.current = newRoundState(view, validatorSet, nil, r, c.backend.HasBadProposal)
+
 			}
 		}
 	} else {

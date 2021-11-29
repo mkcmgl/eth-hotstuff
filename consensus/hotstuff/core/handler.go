@@ -31,6 +31,7 @@ func (c *core) Start() error {
 	// Tests will handle events itself, so we have to make subscribeEvents()
 	// be able to call in test.
 	c.subscribeEvents()
+	fmt.Println("--------------(c *core) Start() ------------------")
 	go c.handleEvents()
 
 	return nil
@@ -94,7 +95,7 @@ func (c *core) handleEvents() {
 			if !ok {
 				return
 			}
-			// A real event arrived, process interesting content
+			// A real event arrived, process interesting content    一个真实的事件到来，处理有趣的内容
 			switch ev := event.Data.(type) {
 			case hotstuff.SendingPubEvent:
 				c.sendPub(ev.Payload)
@@ -109,6 +110,7 @@ func (c *core) handleEvents() {
 			case hotstuff.MessageEvent:
 				if err := c.handleMsg(ev.Payload); err == nil {
 					// This just forwards what we just received...but we use a recentMessage to skip those already have
+					//这只是转发我们刚刚收到的信息…但我们使用recentMessage跳过已经收到的信息。
 					c.backend.Gossip(c.valSet, ev.Payload)
 				}
 			case backlogEvent:
@@ -126,6 +128,7 @@ func (c *core) handleEvents() {
 			if !ok {
 				return
 			}
+			fmt.Println("-------------c.handleTimeoutMsg()---------------")
 			c.handleTimeoutMsg()
 		case event, ok := <-c.finalCommittedSub.Chan():
 			if !ok {
@@ -198,6 +201,8 @@ func (c *core) handleTimeoutMsg() {
 	// the max round with F+1 round change message. We only need to catch up
 	// if the max round is larger than current round.
 	// TODO: Need to check if this also works for hotstuff
+
+	fmt.Println("-------------handleTimeoutMsg------------------")
 	if !c.waitingForRoundChange {
 		maxRound := c.roundChangeSet.MaxRound(c.valSet.F() + 1)
 		if maxRound != nil && maxRound.Cmp(c.current.Round()) > 0 {
