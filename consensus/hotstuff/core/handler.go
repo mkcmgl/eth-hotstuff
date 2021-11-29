@@ -110,11 +110,11 @@ func (c *core) handleEvents() {
 			case hotstuff.MessageEvent:
 				if err := c.handleMsg(ev.Payload); err == nil {
 					// This just forwards what we just received...but we use a recentMessage to skip those already have
-					//这只是转发我们刚刚收到的信息…但我们使用recentMessage跳过已经收到的信息。
+					///这只是转发我们刚刚收到的内容…但我们使用recentMessage跳过已经收到的内容
 					c.backend.Gossip(c.valSet, ev.Payload)
 				}
 			case backlogEvent:
-				// No need to check signature for internal messages
+				// No need to check signature for internal messages /无需检查内部消息的签名
 				if err := c.handleCheckedMsg(ev.msg, ev.src); err == nil {
 					p, err := ev.msg.Payload()
 					if err != nil {
@@ -197,12 +197,13 @@ func (c *core) handleCheckedMsg(msg *message, src hotstuff.Validator) error {
 }
 
 func (c *core) handleTimeoutMsg() {
-	// If we're not waiting for round change yet, we can try to catch up
-	// the max round with F+1 round change message. We only need to catch up
-	// if the max round is larger than current round.
-	// TODO: Need to check if this also works for hotstuff
+	// If we're not waiting for round change yet, we can try to catch up 如果我们还没有等到轮换，我们可以努力赶上
+	// the max round with F+1 round change message. We only need to catch up F+1轮次更改消息的最大轮次。我们只需要赶上
+	// if the max round is larger than current round.  如果最大轮数大于当前轮数。
+	// TODO: Need to check if this also works for hotstuff //TODO:需要检查这是否也适用于hotstuff
 
 	fmt.Println("-------------handleTimeoutMsg------------------")
+	fmt.Println("-------------c.waitingForRoundChange------------------", c.waitingForRoundChange)
 	if !c.waitingForRoundChange {
 		maxRound := c.roundChangeSet.MaxRound(c.valSet.F() + 1)
 		if maxRound != nil && maxRound.Cmp(c.current.Round()) > 0 {
@@ -212,10 +213,13 @@ func (c *core) handleTimeoutMsg() {
 	}
 
 	lastProposal, _ := c.backend.LastProposal()
+	fmt.Println("-------------lastProposal-----------------")
 	if lastProposal != nil && lastProposal.Number().Cmp(c.current.Height()) >= 0 {
 		c.logger.Trace("round change timeout, catch up latest height", "number", lastProposal.Number().Uint64())
 		c.startNewRound(common.Big0)
+
 	} else {
 		c.sendNextRoundChange()
+		fmt.Println(".............core-handler.go...223.")
 	}
 }

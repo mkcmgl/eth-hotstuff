@@ -54,7 +54,7 @@ const (
 	// resubmitAdjustChanSize is the size of resubmitting interval adjustment channel.
 	resubmitAdjustChanSize = 10
 
-	// miningLogAtDepth is the number of confirmations before logging successful mining.
+	// miningLogAtDepth is the number of confirmations before logging successful mining.是记录成功挖掘之前的确认次数。
 	miningLogAtDepth = 7
 
 	// minRecommitInterval is the minimal time interval to recreate the mining block with
@@ -77,7 +77,7 @@ const (
 	staleThreshold = 7
 )
 
-// environment is the worker's current environment and holds all of the current state information.
+// environment is the worker's current environment and holds all of the current state information.//环境是工作人员的当前环境，保存所有当前状态信息。
 type environment struct {
 	signer types.Signer
 
@@ -93,7 +93,7 @@ type environment struct {
 	receipts []*types.Receipt
 }
 
-// task contains all information for consensus engine sealing and result submitting.
+// task contains all information for consensus engine sealing and result submitting.任务包含协商一致引擎密封和结果提交的所有信息。
 type task struct {
 	receipts  []*types.Receipt
 	state     *state.StateDB
@@ -107,14 +107,14 @@ const (
 	commitInterruptResubmit
 )
 
-// newWorkReq represents a request for new sealing work submitting with relative interrupt notifier.
+// newWorkReq represents a request for new sealing work submitting with relative interrupt notifier.表示使用相关中断通知程序提交新密封工作的请求。
 type newWorkReq struct {
 	interrupt *int32
 	noempty   bool
 	timestamp int64
 }
 
-// intervalAdjust represents a resubmitting interval adjustment.
+// intervalAdjust represents a resubmitting interval adjustment. 表示重新提交间隔调整。
 type intervalAdjust struct {
 	ratio float64
 	inc   bool
@@ -153,7 +153,7 @@ type worker struct {
 	current      *environment                 // An environment for current running cycle.
 	localUncles  map[common.Hash]*types.Block // A set of side blocks generated locally as the possible uncle blocks.
 	remoteUncles map[common.Hash]*types.Block // A set of side blocks as the possible uncle blocks.
-	unconfirmed  *unconfirmedBlocks           // A set of locally mined blocks pending canonicalness confirmations.
+	unconfirmed  *unconfirmedBlocks           // A set of locally mined blocks pending canonicalness confirmations. 一组等待规范性确认的局部开采区块。
 
 	mu       sync.RWMutex // The lock used to protect the coinbase and extra fields
 	coinbase common.Address
@@ -218,15 +218,19 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 
 	// BLS-Upgrade
 	if _, ok := worker.engine.(consensus.HotStuff); ok {
+		fmt.Println("      miner-worker.go        221               worker.engine.(consensus.HotStuff)    ok       ", ok)
 		worker.unconfirmed = newUnconfirmedBlocks(eth.BlockChain(), uint(params.MinimumUnconfirmed))
 	} else {
+		fmt.Println("      miner-worker.go        224               worker.engine.(consensus.HotStuff)    ok       ", ok)
 		worker.unconfirmed = newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth)
 	}
 	// /BLS-Upgrade
 
 	go worker.mainLoop()
 	go worker.newWorkLoop(recommit)
+	fmt.Println("    ++++w miner-worker.go        231                              worker.resultLoop()                                  ")
 	go worker.resultLoop()
+	fmt.Println("    ++++w miner-worker.go        231                           orker.taskLoop()                              ")
 	go worker.taskLoop()
 
 	// Submit first work to initialize pending state.
@@ -274,16 +278,17 @@ func (w *worker) pendingBlock() *types.Block {
 	return w.snapshotBlock
 }
 
-// start sets the running status as 1 and triggers new work submitting.
+// start sets the running status as 1 and triggers new work submitting.  将运行状态设置为1并触发新工作提交。
 func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
-	fmt.Println("------------atomic.StoreInt32(&w.running, 1)111111111111-----")
-	// BLS-Upgrade: Start the engine
+
+	// BLS-Upgrade: Start the engine 启动发动机
 	if hotStuff, ok := w.engine.(consensus.HotStuff); ok {
 		hotStuff.Start(w.chain, w.chain.CurrentBlock, w.chain.HasBadBlock)
+
 	}
 	// /BLS-Upgrade
-	fmt.Println("------------ hotStuff, ok := w.engine.222222222222222222222-----")
+
 	w.startCh <- struct{}{}
 	fmt.Println("------------ w.startCh222222222222222222222-----", w.startCh)
 }
@@ -309,50 +314,79 @@ func (w *worker) close() {
 	close(w.exitCh)
 }
 
-// newWorkLoop is a standalone goroutine to submit new mining work upon received events.
+// recalcRecommit recalculates the resubmitting interval upon feedback.
+func recalcRecommit(minRecommit, prev time.Duration, target float64, inc bool) time.Duration {
+	var (
+		prevF = float64(prev.Nanoseconds())
+		next  float64
+	)
+	if inc {
+		next = prevF*(1-intervalAdjustRatio) + intervalAdjustRatio*(target+intervalAdjustBias)
+		max := float64(maxRecommitInterval.Nanoseconds())
+		if next > max {
+			next = max
+		}
+	} else {
+		next = prevF*(1-intervalAdjustRatio) + intervalAdjustRatio*(target-intervalAdjustBias)
+		min := float64(minRecommit.Nanoseconds())
+		if next < min {
+			next = min
+		}
+	}
+	return time.Duration(int64(next))
+}
+
+// newWorkLoop is a standalone goroutine to submit new mining work upon received events.是一个独立的goroutine，用于在收到事件后提交新的挖掘工作。
 func (w *worker) newWorkLoop(recommit time.Duration) {
+
 	var (
 		interrupt   *int32
-		minRecommit = recommit // minimal resubmit interval specified by user.
-		timestamp   int64      // timestamp for each round of mining.
+		minRecommit = recommit // minimal resubmit interval specified by user. 用户指定的最小重新提交间隔。
+		timestamp   int64      // timestamp for each round of mining. 每轮挖掘的时间戳。
 	)
 
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 	<-timer.C // discard the initial tick
 
-	// commit aborts in-flight transaction execution with given signal and resubmits a new one.
+	// commit aborts in-flight transaction execution with given signal and resubmits a new one.使用给定的信号中止正在进行的事务执行，并重新提交一个新的信号。
 	commit := func(noempty bool, s int32) {
 		if interrupt != nil {
 			atomic.StoreInt32(interrupt, s)
 		}
 		interrupt = new(int32)
-		w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty, timestamp: timestamp}
+		select {
+		case w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty, timestamp: timestamp}:
+		case <-w.exitCh:
+			return
+		}
 		timer.Reset(recommit)
 		atomic.StoreInt32(&w.newTxs, 0)
 	}
-	// recalcRecommit recalculates the resubmitting interval upon feedback.
-	recalcRecommit := func(target float64, inc bool) {
-		var (
-			prev = float64(recommit.Nanoseconds())
-			next float64
-		)
-		if inc {
-			next = prev*(1-intervalAdjustRatio) + intervalAdjustRatio*(target+intervalAdjustBias)
-			// Recap if interval is larger than the maximum time interval
-			if next > float64(maxRecommitInterval.Nanoseconds()) {
-				next = float64(maxRecommitInterval.Nanoseconds())
-			}
-		} else {
-			next = prev*(1-intervalAdjustRatio) + intervalAdjustRatio*(target-intervalAdjustBias)
-			// Recap if interval is less than the user specified minimum
-			if next < float64(minRecommit.Nanoseconds()) {
-				next = float64(minRecommit.Nanoseconds())
-			}
-		}
-		recommit = time.Duration(int64(next))
-	}
-	// clearPending cleans the stale pending tasks.
+	// // recalcRecommit recalculates the resubmitting interval upon feedback.根据反馈重新计算重新提交间隔。
+	// recalcRecommit := func(target float64, inc bool) {
+	// 	var (
+	// 		prev = float64(recommit.Nanoseconds())
+	// 		next float64
+	// 	)
+	// 	if inc {
+	// 		next = prev*(1-intervalAdjustRatio) + intervalAdjustRatio*(target+intervalAdjustBias)
+	// 		// Recap if interval is larger than the maximum time interval //如果间隔大于最大时间间隔，则重述
+	// 		fmt.Println("      //如果间隔大于最大时间间隔，则重述         ")
+	// 		if next > float64(maxRecommitInterval.Nanoseconds()) {
+	// 			next = float64(maxRecommitInterval.Nanoseconds())
+	// 		}
+	// 	} else {
+	// 		next = prev*(1-intervalAdjustRatio) + intervalAdjustRatio*(target-intervalAdjustBias)
+	// 		// Recap if interval is less than the user specified minimum/如果间隔小于用户指定的最小值，则重述
+	// 		fmt.Println("                 /如果间隔小于用户指定的最小值，则重述")
+	// 		if next < float64(minRecommit.Nanoseconds()) {
+	// 			next = float64(minRecommit.Nanoseconds())
+	// 		}
+	// 	}
+	// 	recommit = time.Duration(int64(next))
+	// }
+	// clearPending cleans the stale pending tasks. 清除过时的挂起任务。
 	clearPending := func(number uint64) {
 		w.pendingMu.Lock()
 		for h, t := range w.pendingTasks {
@@ -407,11 +441,15 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			// Adjust resubmit interval by feedback.
 			if adjust.inc {
 				before := recommit
-				recalcRecommit(float64(recommit.Nanoseconds())/adjust.ratio, true)
+				target := float64(recommit.Nanoseconds()) / adjust.ratio
+				recommit = recalcRecommit(minRecommit, recommit, target, true)
+				// recalcRecommit(float64(recommit.Nanoseconds())/adjust.ratio, true)
 				log.Trace("Increase miner recommit interval", "from", before, "to", recommit)
 			} else {
 				before := recommit
-				recalcRecommit(float64(minRecommit.Nanoseconds()), false)
+				target := float64(recommit.Nanoseconds()) / adjust.ratio
+				recommit = recalcRecommit(minRecommit, recommit, target, true)
+				// recalcRecommit(float64(minRecommit.Nanoseconds()), false)
 				log.Trace("Decrease miner recommit interval", "from", before, "to", recommit)
 			}
 
@@ -426,6 +464,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 }
 
 // mainLoop is a standalone goroutine to regenerate the sealing task based on the received event.
+//是一个独立的goroutine，用于根据接收到的事件重新生成密封任务。
 func (w *worker) mainLoop() {
 	defer w.txsSub.Unsubscribe()
 	defer w.chainHeadSub.Unsubscribe()
@@ -434,25 +473,27 @@ func (w *worker) mainLoop() {
 	for {
 		select {
 		case req := <-w.newWorkCh:
+			fmt.Println(".         .            .          . .           .             .")
 			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)
 
 		case ev := <-w.chainSideCh:
-			// Short circuit for duplicate side blocks
+			// Short circuit for duplicate side blocks /重复侧块短路
 			if _, exist := w.localUncles[ev.Block.Hash()]; exist {
 				continue
 			}
 			if _, exist := w.remoteUncles[ev.Block.Hash()]; exist {
 				continue
 			}
-			// Add side block to possible uncle block set depending on the author.
+			// Add side block to possible uncle block set depending on the author./根据作者将侧块添加到可能的块集。
 			if w.isLocalBlock != nil && w.isLocalBlock(ev.Block) {
 				w.localUncles[ev.Block.Hash()] = ev.Block
 			} else {
 				w.remoteUncles[ev.Block.Hash()] = ev.Block
 			}
-			// If our mining block contains less than 2 uncle blocks,
-			// add the new uncle block if valid and regenerate a mining block.
+			// If our mining block contains less than 2 uncle blocks, 如果我们的采矿区块少于2个区块，
+			// add the new uncle block if valid and regenerate a mining block.      //添加新块（如果有效）并重新生成挖掘块。
 			if w.isRunning() && w.current != nil && w.current.uncles.Cardinality() < 2 {
+				fmt.Println("                     矿区块少于2个区块                     ")
 				start := time.Now()
 				if err := w.commitUncle(w.current, ev.Block.Header()); err == nil {
 					var uncles []*types.Header
@@ -471,6 +512,7 @@ func (w *worker) mainLoop() {
 						uncles = append(uncles, uncle.Header())
 						return false
 					})
+					fmt.Println("   worker.go                        w.isRunning()                   ")
 					w.commit(uncles, nil, true, start)
 				}
 			}
@@ -506,7 +548,11 @@ func (w *worker) mainLoop() {
 			} else {
 				// If clique is running in dev mode(period is 0), disable
 				// advance sealing here.
-				if w.chainConfig.Clique != nil && w.chainConfig.Clique.Period == 0 {
+				// if w.chainConfig.Clique != nil && w.chainConfig.Clique.Period == 0 {
+				// 	w.commitNewWork(nil, true, time.Now().Unix())
+				// }
+				fmt.Println("                  w.chainConfig.HotStuff.Period           ", w.chainConfig.HotStuff.Period)
+				if w.chainConfig.HotStuff != nil && w.chainConfig.HotStuff.Period == 0 {
 					w.commitNewWork(nil, true, time.Now().Unix())
 				}
 			}
@@ -525,8 +571,8 @@ func (w *worker) mainLoop() {
 	}
 }
 
-// taskLoop is a standalone goroutine to fetch sealing task from the generator and
-// push them to consensus engine.
+// taskLoop is a standalone goroutine to fetch sealing task from the generator and是一个独立的goroutine，用于从生成器和
+// push them to consensus engine.把他们推到共识引擎。
 func (w *worker) taskLoop() {
 	var (
 		stopCh chan struct{}
@@ -567,23 +613,30 @@ func (w *worker) taskLoop() {
 			}
 		case <-w.exitCh:
 			interrupt()
+			fmt.Println("           interrupt()                      ")
 			return
 		}
 	}
 }
 
-// resultLoop is a standalone goroutine to handle sealing result submitting
-// and flush relative data to the database.
+// resultLoop is a standalone goroutine to handle sealing result submitting是一个独立的goroutine，用于处理密封结果提交
+// and flush relative data to the database.并将相关数据刷新到数据库。
 func (w *worker) resultLoop() {
 	for {
 		select {
+
 		case block := <-w.resultCh:
-			// Short circuit when receiving empty result.
+			// Short circuit when receiving empty result.接收空结果时短路。
+			fmt.Println(" ....miner-worker.go               630     ")
 			if block == nil {
+				fmt.Println(" ....miner-worker.go               632     ")
 				continue
 			}
-			// Short circuit when receiving duplicate result caused by resubmitting.
+			// Short circuit when receiving duplicate result caused by resubmitting. 到因重新提交而导致的重复结果时短路。
+			fmt.Println(" ....miner-worker.go                w.chain.HasBlock    ")
 			if w.chain.HasBlock(block.Hash(), block.NumberU64()) {
+
+				fmt.Println(" ....miner-worker.go               639     ")
 				continue
 			}
 			var (
@@ -595,6 +648,7 @@ func (w *worker) resultLoop() {
 			w.pendingMu.RUnlock()
 			if !exist {
 				log.Error("Block found but no relative pending task", "number", block.Number(), "sealhash", sealhash, "hash", hash)
+
 				continue
 			}
 			// Different block could share same sealhash, deep copy here to prevent write-write conflict.
@@ -602,37 +656,54 @@ func (w *worker) resultLoop() {
 				receipts = make([]*types.Receipt, len(task.receipts))
 				logs     []*types.Log
 			)
-			for i, receipt := range task.receipts {
+			fmt.Println(" ....miner-worker.go                 659    ")
+			for i, taskReceipt := range task.receipts {
+				receipt := new(types.Receipt)
+				receipts[i] = receipt
+				*receipts[i] = *taskReceipt
+
 				// add block location fields
 				receipt.BlockHash = hash
 				receipt.BlockNumber = block.Number()
 				receipt.TransactionIndex = uint(i)
+				// Update the block hash in all logs since it is now available and not when the//更新所有日志中的块哈希，因为它现在可用，而不是在
+				// receipt/log of individual transactions were created. 已创建单个交易的收据/日志。
+				fmt.Println(" ....miner-worker.go                 新所有日志中的块哈希     ")
+				receipt.Logs = make([]*types.Log, len(taskReceipt.Logs))
+				for i, tasklog := range taskReceipt.Logs {
+					log := new(types.Log)
+					receipt.Logs[i] = log
+					*log = *tasklog
 
-				receipts[i] = new(types.Receipt)
-				*receipts[i] = *receipt
-				// Update the block hash in all logs since it is now available and not when the
-				// receipt/log of individual transactions were created.
-				for _, log := range receipt.Logs {
 					log.BlockHash = hash
+
 				}
+				fmt.Println(" ....miner-worker.go                logs = append     ")
 				logs = append(logs, receipt.Logs...)
 			}
-			// Commit block and state to database.
+			// Commit block and state to database.将块和状态提交到数据库
+			fmt.Println(" ....miner-worker.go                  将块和状态提交到数据库      ")
 			_, err := w.chain.WriteBlockWithState(block, receipts, logs, task.state, true)
+
+			fmt.Println(" ....miner-worker.go                Successfully sealed new block      ")
 			if err != nil {
 				log.Error("Failed writing block to chain", "err", err)
+				fmt.Println(" ....miner-worker.go               691     ")
 				continue
 			}
 			log.Info("Successfully sealed new block", "number", block.Number(), "sealhash", sealhash, "hash", hash,
 				"elapsed", common.PrettyDuration(time.Since(task.createdAt)))
 
-			// Broadcast the block and announce chain insertion event
+			// Broadcast the block and announce chain insertion event //广播区块并宣布链插入事件
+			fmt.Println(" ....miner-worker.go                    /广播区块并宣布链插入事件       ")
 			w.mux.Post(core.NewMinedBlockEvent{Block: block})
 
-			// Insert the block into the set of pending ones to resultLoop for confirmations
+			// Insert the block into the set of pending ones to resultLoop for confirmations将块插入到resultLoop的挂起块集中进行确认
+			fmt.Println("......miner-worker.go       633   将块插入到resultLoop的挂起块集中进行确认  ...")
 			w.unconfirmed.Insert(block.NumberU64(), block.Hash())
 
 		case <-w.exitCh:
+			fmt.Println("              w.exitCh:            ")
 			return
 		}
 	}
@@ -847,7 +918,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 	return false
 }
 
-// commitNewWork generates several new sealing tasks based on the parent block.
+// commitNewWork generates several new sealing tasks based on the parent block. 基于父块生成几个新的密封任务。
 func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
@@ -873,7 +944,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
 	}
-	// Only set the coinbase if our consensus engine is running (avoid spurious block rewards)
+	// Only set the coinbase if our consensus engine is running (avoid spurious block rewards)仅在共识引擎运行时设置coinbase（避免虚假的区块奖励）
 	if w.isRunning() {
 		if w.coinbase == (common.Address{}) {
 			log.Error("Refusing to mine without etherbase")
@@ -935,8 +1006,9 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	commitUncles(w.remoteUncles)
 
 	if !noempty {
-		// Create an empty block based on temporary copied state for sealing in advance without waiting block
-		// execution finished.
+		// Create an empty block based on temporary copied state for sealing in advance without waiting block//基于临时复制状态创建空块，用于提前密封，无需等待块
+		// execution finished. /执行完毕。
+		fmt.Println("       worker.go       基于临时复制状态创建空块，用于提前密封，无需等待块")
 		w.commit(uncles, nil, false, tstart)
 	}
 
@@ -971,18 +1043,20 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 			return
 		}
 	}
+	fmt.Println("     worker.go            981                 w.commit       ")
 	w.commit(uncles, w.fullTaskHook, true, tstart)
 }
 
-// commit runs any post-transaction state modifications, assembles the final block
-// and commits new work if consensus engine is running.
+// commit runs any post-transaction state modifications, assembles the final block//commit运行任何事务后状态修改，组装最后一个块
+// and commits new work if consensus engine is running.//如果共识引擎正在运行，则提交新工作。
 func (w *worker) commit(uncles []*types.Header, interval func(), update bool, start time.Time) error {
-	// Deep copy receipts here to avoid interaction between different tasks.
-	receipts := make([]*types.Receipt, len(w.current.receipts))
-	for i, l := range w.current.receipts {
-		receipts[i] = new(types.Receipt)
-		*receipts[i] = *l
-	}
+	// Deep copy receipts here to avoid interaction between different tasks. 在此处深度复制收据，以避免不同任务之间的交互。
+	//receipts := make([]*types.Receipt, len(w.current.receipts))
+	// for i, l := range w.current.receipts {
+	// 	receipts[i] = new(types.Receipt)
+	// 	*receipts[i] = *l
+	// }
+	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
 	block, err := w.engine.FinalizeAndAssemble(w.chain, w.current.header, s, w.current.txs, uncles, w.current.receipts)
 	if err != nil {
@@ -994,6 +1068,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		}
 		select {
 		case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now()}:
+			fmt.Println("miner-worker.go   1004         w.unconfirmed.Shift       ")
 			w.unconfirmed.Shift(block.NumberU64() - 1)
 
 			feesWei := new(big.Int)
@@ -1013,6 +1088,15 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		w.updateSnapshot()
 	}
 	return nil
+}
+
+func copyReceipts(receipts []*types.Receipt) []*types.Receipt {
+	result := make([]*types.Receipt, len(receipts))
+	for i, l := range receipts {
+		cpy := *l
+		result[i] = &cpy
+	}
+	return result
 }
 
 // postSideBlock fires a side chain event, only use it for testing.

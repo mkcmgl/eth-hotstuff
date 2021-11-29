@@ -29,7 +29,7 @@ import (
 // Proposal supports retrieving height and serialized block to be used during HotStuff consensus.
 // It is the interface that abstracts different message structure. (consensus/hotstuff/core/core.go)
 type Proposal interface {
-	// Number retrieves the block height number of this proposal. 编号检索此方案的区块高度编号
+	// Number retrieves the block height number of this proposal.
 	Number() *big.Int
 
 	// Hash retrieves the hash of this proposal.
@@ -44,6 +44,44 @@ type Proposal interface {
 
 type Request struct {
 	Proposal Proposal
+}
+
+func (Request *Request) Number() *big.Int {
+	fmt.Println("type.go-----------50----Number")
+	return Request.Proposal.Number()
+
+}
+
+func (Request *Request) Hash() common.Hash {
+	fmt.Println("type.go-----------50----Hash")
+	// var request struct {
+	// 	// Round  *big.Int
+	// 	Proposal Proposal
+	// }
+	return Request.Proposal.Hash()
+}
+
+func (Request *Request) EncodeRLP(w io.Writer) error {
+	fmt.Println("type.go-----------50----EncodeRLP")
+	return rlp.Encode(w, []interface{}{Request.Proposal})
+}
+func (Request *Request) DecodeRLP(s *rlp.Stream) error {
+	fmt.Println("type.go-----------50----DecodeRLP")
+	var request struct {
+		// Round  *big.Int
+		Proposal Proposal
+	}
+
+	if err := s.Decode(&request); err != nil {
+		return err
+	}
+	Request.Proposal = request.Proposal
+
+	return nil
+}
+
+func (Request *Request) String() string {
+	return fmt.Sprintf("{Number: %d, Hash: %d}", Request.Proposal.Number().Uint64(), Request.Proposal.Hash())
 }
 
 // View includes a round number and a block height number.

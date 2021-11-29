@@ -53,7 +53,7 @@ type Config struct {
 	Noverify  bool           // Disable remote mining solution verification(only useful in ethash).
 }
 
-// Miner creates blocks and searches for proof-of-work values.
+// Miner creates blocks and searches for proof-of-work values.     创建块并搜索工作值证明。
 type Miner struct {
 	mux      *event.TypeMux
 	worker   *worker
@@ -62,8 +62,8 @@ type Miner struct {
 	engine   consensus.Engine
 	exitCh   chan struct{}
 
-	canStart    int32 // can start indicates whether we can start the mining operation
-	shouldStart int32 // should start indicates whether we should start after sync
+	canStart    int32 // can start indicates whether we can start the mining operation指示是否可以启动挖掘操作
+	shouldStart int32 // should start indicates whether we should start after sync 应开始指示是否应在同步后开始
 }
 
 func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
@@ -84,9 +84,13 @@ func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *even
 // It's entered once and as soon as `Done` or `Failed` has been broadcasted the events are unregistered and
 // the loop is exited. This to prevent a major security vuln where external parties can DOS you with blocks
 // and halt your mining operation for as long as the DOS continues.
+//它只输入一次，一旦“完成”或“失败”被广播，事件就会被取消注册并被删除
+//循环已退出。这是为了防止出现一个主要的安全漏洞，在这个漏洞中，外部各方可以使用块来攻击您
+//并在DOS持续期间停止挖掘操作。
 func (miner *Miner) update() {
 	events := miner.mux.Subscribe(downloader.StartEvent{}, downloader.DoneEvent{}, downloader.FailedEvent{})
 	defer events.Unsubscribe()
+	fmt.Println("                   miner.go      --93    update           ")
 
 	for {
 		select {
@@ -120,16 +124,16 @@ func (miner *Miner) update() {
 }
 
 func (miner *Miner) Start(coinbase common.Address) {
-	fmt.Println("------------start11111111111111111111111-----")
+
 	atomic.StoreInt32(&miner.shouldStart, 1)
-	fmt.Println("------------start22222222222222222222221-----")
+
 	miner.SetEtherbase(coinbase)
-	fmt.Println("------------start3333333333333333333333333-----")
+
 	if atomic.LoadInt32(&miner.canStart) == 0 {
 		log.Info("Network syncing, will start miner afterwards")
 		return
 	}
-	fmt.Println("------------start444444444444444444444444-----")
+
 	miner.worker.start()
 }
 
@@ -162,21 +166,21 @@ func (miner *Miner) SetExtra(extra []byte) error {
 	return nil
 }
 
-// SetRecommitInterval sets the interval for sealing work resubmitting.
+// SetRecommitInterval sets the interval for sealing work resubmitting.设置重新提交密封工作的间隔。
 func (miner *Miner) SetRecommitInterval(interval time.Duration) {
 	miner.worker.setRecommitInterval(interval)
 }
 
-// Pending returns the currently pending block and associated state.
+// Pending returns the currently pending block and associated state.返回当前挂起的块和关联状态
 func (miner *Miner) Pending() (*types.Block, *state.StateDB) {
 	return miner.worker.pending()
 }
 
-// PendingBlock returns the currently pending block.
+// PendingBlock returns the currently pending block. 返回当前挂起的块。
 //
-// Note, to access both the pending block and the pending state
-// simultaneously, please use Pending(), as the pending state can
-// change between multiple method calls
+// Note, to access both the pending block and the pending state 注意，要同时访问挂起块和挂起状态
+// simultaneously, please use Pending(), as the pending state can //同时，请使用Pending（），因为挂起状态可以
+// change between multiple method calls //在多个方法调用之间进行更改
 func (miner *Miner) PendingBlock() *types.Block {
 	return miner.worker.pendingBlock()
 }
@@ -186,8 +190,8 @@ func (miner *Miner) SetEtherbase(addr common.Address) {
 	miner.worker.setEtherbase(addr)
 }
 
-// SubscribePendingLogs starts delivering logs from pending transactions
-// to the given channel.
+// SubscribePendingLogs starts delivering logs from pending transactions 开始从挂起的事务传递日志
+// to the given channel. //到给定的频道。
 func (self *Miner) SubscribePendingLogs(ch chan<- []*types.Log) event.Subscription {
 	return self.worker.pendingLogsFeed.Subscribe(ch)
 }

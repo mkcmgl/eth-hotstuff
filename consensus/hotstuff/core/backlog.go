@@ -31,10 +31,10 @@ var (
 	}
 )
 
-// checkMessage checks the message state
-// return errInvalidMessage if the message is invalid
-// return errFutureMessage if the message view is larger than current view
-// return errOldMessage if the message view is smaller than current view
+// checkMessage checks the message state 检查消息状态
+// return errInvalidMessage if the message is invalid 如果消息无效，则返回
+// return errFutureMessage if the message view is larger than current view 如果消息视图大于当前视图，则返回e
+// return errOldMessage if the message view is smaller than current view 如果消息视图小于当前视图，则返回e
 func (c *core) checkMessage(msgCode uint64, view *hotstuff.View) error {
 	if view == nil || view.Height == nil || view.Round == nil {
 		return errInvalidMessage

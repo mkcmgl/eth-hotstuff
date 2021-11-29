@@ -18,6 +18,7 @@ package miner
 
 import (
 	"container/ring"
+	"fmt"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -47,13 +48,13 @@ type unconfirmedBlock struct {
 // used by the miner to provide logs to the user when a previously mined block
 // has a high enough guarantee to not be reorged out of the canonical chain.
 type unconfirmedBlocks struct {
-	chain  chainRetriever // Blockchain to verify canonical status through
-	depth  uint           // Depth after which to discard previous blocks
-	blocks *ring.Ring     // Block infos to allow canonical chain cross checks
-	lock   sync.RWMutex   // Protects the fields from concurrent access
+	chain  chainRetriever // Blockchain to verify canonical status through通过区块链验证规范状态
+	depth  uint           // Depth after which to discard previous blocks 丢弃之前块的深度
+	blocks *ring.Ring     // Block infos to allow canonical chain cross checks 阻止信息以允许规范链交叉检查
+	lock   sync.RWMutex   // Protects the fields from concurrent access 保护字段不受并发访问
 }
 
-// newUnconfirmedBlocks returns new data structure to track currently unconfirmed blocks.
+// newUnconfirmedBlocks returns new data structure to track currently unconfirmed blocks.返回新的数据结构以跟踪当前未确认的块。
 func newUnconfirmedBlocks(chain chainRetriever, depth uint) *unconfirmedBlocks {
 	return &unconfirmedBlocks{
 		chain: chain,
@@ -61,18 +62,18 @@ func newUnconfirmedBlocks(chain chainRetriever, depth uint) *unconfirmedBlocks {
 	}
 }
 
-// Insert adds a new block to the set of unconfirmed ones.
+// Insert adds a new block to the set of unconfirmed ones.Insert将新块添加到未确认的块集中
 func (set *unconfirmedBlocks) Insert(index uint64, hash common.Hash) {
-	// If a new block was mined locally, shift out any old enough blocks
+	// If a new block was mined locally, shift out any old enough blocks 如果一个新区块在当地开采，则将所有足够老的区块移出
 	set.Shift(index)
 
-	// Create the new item as its own ring
+	// Create the new item as its own ring /创建新项目作为其自己的环
 	item := ring.New(1)
 	item.Value = &unconfirmedBlock{
 		index: index,
 		hash:  hash,
 	}
-	// Set as the initial ring or append to the end
+	// Set as the initial ring or append to the end /设置为初始环或附加到末尾
 	set.lock.Lock()
 	defer set.lock.Unlock()
 
@@ -81,7 +82,7 @@ func (set *unconfirmedBlocks) Insert(index uint64, hash common.Hash) {
 	} else {
 		set.blocks.Move(-1).Link(item)
 	}
-	// Display a log for the user to notify of a new mined block unconfirmed
+	// Display a log for the user to notify of a new mined block unconfirmed/显示日志，以便用户通知未确认的新开采区块
 	log.Info("🔨 mined potential block", "number", index, "hash", hash)
 }
 
@@ -91,14 +92,15 @@ func (set *unconfirmedBlocks) Insert(index uint64, hash common.Hash) {
 func (set *unconfirmedBlocks) Shift(height uint64) {
 	set.lock.Lock()
 	defer set.lock.Unlock()
-
+	fmt.Println("-miner-unconfirmed.go       95               set.blocks = nil，", set.blocks)
 	for set.blocks != nil {
-		// Retrieve the next unconfirmed block and abort if too fresh
+		// Retrieve the next unconfirmed block and abort if too fresh//检索下一个未确认的块，如果太新则中止
+		fmt.Println("-miner-unconfirmed.go        98                检索下一个未确认的块，")
 		next := set.blocks.Value.(*unconfirmedBlock)
 		if next.index+uint64(set.depth) > height {
 			break
 		}
-		// Block seems to exceed depth allowance, check for canonical status
+		// Block seems to exceed depth allowance, check for canonical status /块似乎超出了深度容差，请检查规范状态
 		header := set.chain.GetHeaderByNumber(next.index)
 		switch {
 		case header == nil:
@@ -106,7 +108,8 @@ func (set *unconfirmedBlocks) Shift(height uint64) {
 		case header.Hash() == next.hash:
 			log.Info("🔗 block reached canonical chain", "number", next.index, "hash", next.hash)
 		default:
-			// Block is not canonical, check whether we have an uncle or a lost block
+			// Block is not canonical, check whether we have an uncle or a lost block 块不是规范的，请检查我们是否有一个叔叔或丢失的块
+			fmt.Println("-miner-unconfirmed.go         111              included := false")
 			included := false
 			for number := next.index; !included && number < next.index+uint64(set.depth) && number <= height; number++ {
 				if block := set.chain.GetBlockByNumber(number); block != nil {

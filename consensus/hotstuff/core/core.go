@@ -110,12 +110,13 @@ type core struct {
 func (c *core) finalizeMessage(msg *message) ([]byte, error) {
 	var err error
 
-	// Add local address and aggregated-oriented pub and sign
+	// Add local address and aggregated-oriented pub and sign //添加本地地址和面向聚合的发布和签名
 	msg.Address = common.Address{}
 	msg.AggPub = []byte{}
 	msg.AggSign = []byte{}
 
 	// Assign the AggPub, AggSign, and Mask if it's a RESPONSE message and proposal is not nil
+	//如果是响应消息且建议不是nil，则分配AggPub、AggSign和Mask
 	if (msg.Code == msgResponse || msg.Code == msgRoundChange) && c.current.Proposal() != nil {
 		signedData, err := msg.PayloadNoAddrNoAggNoSig()
 		if err != nil {
@@ -126,10 +127,11 @@ func (c *core) finalizeMessage(msg *message) ([]byte, error) {
 			return nil, err
 		}
 	}
-	// Add sender address
+	fmt.Println("       core.go      130                                       最终消息            ")
+	// Add sender address 最终消息
 	msg.Address = c.Address()
 
-	// Sign message
+	// Sign message//签名信息
 	data, err := msg.PayloadNoSig()
 	if err != nil {
 		return nil, err
@@ -139,7 +141,7 @@ func (c *core) finalizeMessage(msg *message) ([]byte, error) {
 		return nil, err
 	}
 
-	// Convert to payload
+	// Convert to payload 转换为有效载荷
 	payload, err := msg.Payload()
 	if err != nil {
 		return nil, err
@@ -158,18 +160,19 @@ func (c *core) broadcast(msg *message, round *big.Int) {
 	}
 
 	if msg.Code == msgResponse && c.current.Proposal() != nil {
-		// Unicast payload to the current speaker
+		// Unicast payload to the current speaker 单播有效载荷到当前扬声器
 		if err = c.backend.Unicast(c.valSet, payload); err != nil {
 			logger.Error("Failed to unicast message", "msg", msg, "err", err)
 			return
 		}
 	} else if msg.Code == msgRoundChange && c.current.Proposal() != nil {
-		// Calculate the new speaker
+		// Calculate the new speaker 计算新的扬声器
 		_, lastSpeaker := c.backend.LastProposal()
 		proposedNewSet := c.valSet.Copy()
 		proposedNewSet.CalcSpeaker(lastSpeaker, round.Uint64())
 		if !proposedNewSet.IsSpeaker(c.Address()) {
-			// Unicast payload to the proposed speaker
+			// Unicast payload to the proposed speaker //向提议的说话人发送单播有效载荷
+			fmt.Println("        core.go        175          //向提议的说话人发送单播有效载荷")
 			if err = c.backend.Unicast(proposedNewSet, payload); err != nil {
 				logger.Error("Failed to unicast message", "msg", msg, "err", err)
 				return
@@ -179,7 +182,8 @@ func (c *core) broadcast(msg *message, round *big.Int) {
 			return
 		}
 	} else {
-		// Broadcast payload
+		// Broadcast payload/广播有效载荷
+		fmt.Println("     core.go   186       Broadcast payload /广播有效载荷  ")
 		if err = c.backend.Broadcast(c.valSet, payload); err != nil {
 			logger.Error("Failed to broadcast message", "msg", msg, "err", err)
 			return
@@ -189,6 +193,7 @@ func (c *core) broadcast(msg *message, round *big.Int) {
 }
 
 func (c *core) currentView() *hotstuff.View {
+	fmt.Println("  core--core.go     196       currentView      ")
 	return &hotstuff.View{
 		Height: new(big.Int).Set(c.current.Height()),
 		Round:  new(big.Int).Set(c.current.Round()),
@@ -221,7 +226,7 @@ func (c *core) commit(roundChange bool, round *big.Int) {
 
 	collectionPub := make(map[common.Address][]byte)
 	collectionSig := make(map[common.Address][]byte)
-
+	fmt.Println("               core.go             229                  ")
 	if !roundChange {
 		proposal := c.current.Proposal()
 		if proposal != nil {
@@ -240,6 +245,7 @@ func (c *core) commit(roundChange bool, round *big.Int) {
 		}
 	} else {
 		// Round Change
+		fmt.Println("                 core.go  248              轮换             ")
 		if !c.pendingRequestsUnconfirmedQueue.Empty() {
 			proposal, err := c.pendingRequestsUnconfirmedQueue.GetFirst()
 			if err != nil {
@@ -265,6 +271,7 @@ func (c *core) commit(roundChange bool, round *big.Int) {
 }
 
 // startNewRound starts a new round. if round equals to 0, it means to starts a new block height
+//StartNew开始新一轮。如果round等于0，则表示开始新的块高度
 func (c *core) startNewRound(round *big.Int) {
 	var logger log.Logger
 	if c.current == nil {
@@ -274,7 +281,8 @@ func (c *core) startNewRound(round *big.Int) {
 	}
 
 	roundChange := false
-	// Try to get last proposal
+	// Try to get last proposal 争取得到最后的建议
+	fmt.Println("                   core.go       285                  争取得到最后的建议")
 	lastProposal, lastSpeaker := c.backend.LastProposal()
 	if c.current == nil {
 		logger.Trace("Start to the initial round")
@@ -289,7 +297,9 @@ func (c *core) startNewRound(round *big.Int) {
 		logger.Trace("Catch up latest proposal", "number", lastProposal.Number().Uint64(), "hash", lastProposal.Hash())
 		// BLS:
 		// The Proposal in c.current has to be 1 block higher than lastProposal. In hotstuff, however, c.current should
+		////c.current中的提案必须比lastProposal高1个街区。然而，在hotstuff中，c.current应该
 		// replace the lastProposal.Number()-1 because of the three-phase view change protocol.
+		//替换lastProposal.Number（）-1，因为存在三相视图更改协议。
 		// /BLS
 	} else if lastProposal.Number().Cmp(big.NewInt(c.current.Height().Int64()-1)) == 0 {
 		if round.Cmp(common.Big0) == 0 {
@@ -308,8 +318,8 @@ func (c *core) startNewRound(round *big.Int) {
 	var newView *hotstuff.View
 	if roundChange {
 		newView = &hotstuff.View{
-			// TODO: Need to check if (height - 1) is right
-			// Height: new(big.Int).Set(c.current.Height()),
+			// TODO: Need to check if (height - 1) is right      需要检查（高度-1）是否正确
+			// Height: new(big.Int).Set(c.current.Height()), 高度：新建（big.Int）.Set（c.current.Height（）），
 			Height: new(big.Int).Sub(c.current.Height(), common.Big1),
 			Round:  new(big.Int).Set(round),
 		}
@@ -376,16 +386,19 @@ func (c *core) updateRoundState(view *hotstuff.View, validatorSet hotstuff.Valid
 				return
 			} else {
 				fmt.Println("*****************r := &hotstuff.Request****************")
+				// p1 := new(hotstuff.Proposal)
+				// proposal = &p1
 				r := &hotstuff.Request{
 
 					Proposal: proposal.(hotstuff.Proposal),
 				}
-				fmt.Println("-..3333333333333333333333333333333333")
+
 				c.current = newRoundState(view, validatorSet, nil, r, c.backend.HasBadProposal)
 
 			}
 		}
 	} else {
+		fmt.Println("-..--------core.go    401---------------")
 		c.current = newRoundState(view, validatorSet, nil, nil, c.backend.HasBadProposal)
 	}
 }
@@ -444,7 +457,7 @@ func (c *core) HotStuffSize() int {
 	return int((c.valSet.Size() - (c.valSet.Size()-1)/3))
 }
 
-// PrepareCommittedSeal returns a committed seal for the given hash
+// PrepareCommittedSeal returns a committed seal for the given hash 返回给定哈希的已提交密封
 func (c *core) CurrentRoundstate() *roundState {
 	if c.current != nil {
 		return c.current

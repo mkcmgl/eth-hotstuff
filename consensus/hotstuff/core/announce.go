@@ -27,7 +27,7 @@ import (
 
 func (c *core) sendAnnounce(announce *hotstuff.Request) {
 	logger := c.logger.New("state", c.state)
-	// If I'm the speaker and on the same block height with the proposal/如果我是演讲者并且和提案的高度相同
+	// If I'm the speaker and on the same block height with the proposal /如果我是演讲者并且和提案的高度相同
 	fmt.Println("---.current.Height()--------------", c.current.height)
 	fmt.Println("---.announce.Proposal.Number()--------------", announce.Proposal.Number())
 

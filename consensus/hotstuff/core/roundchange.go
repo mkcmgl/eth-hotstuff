@@ -27,14 +27,14 @@ import (
 
 // sendNextRoundChange sends the ROUND CHANGE message with current round + 1 发送当前回合+1的回合更改消息
 func (c *core) sendNextRoundChange() {
-	fmt.Println("-------------sendNextRoundChange-------------------")
+	fmt.Println("----roundchange.go---30------sendNextRoundChange-------------------")
 	cv := c.currentView()
 	c.sendRoundChange(new(big.Int).Add(cv.Round, common.Big1))
 }
 
 // sendRoundChange sends the ROUND CHANGE message with the given round //sendRoundChange使用给定的回合发送回合更改消息
 func (c *core) sendRoundChange(round *big.Int) {
-	fmt.Println("----------------sendRoundChange--------------------------")
+	fmt.Println("--------roundchange.go----------37--sendRoundChange--------------------------")
 	logger := c.logger.New("state", c.state)
 
 	cv := c.currentView()

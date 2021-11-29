@@ -113,8 +113,8 @@ func (s *Ethereum) SetContractBackend(backend bind.ContractBackend) {
 	}
 }
 
-// New creates a new Ethereum object (including the
-// initialisation of the common Ethereum object)
+// New creates a new Ethereum object (including the/新建创建一个新的以太坊对象（包括
+// initialisation of the common Ethereum object) 通用以太坊对象的初始化）
 func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	// Ensure configuration values are compatible and sane
 	if config.SyncMode == downloader.LightSync {
@@ -225,6 +225,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if eth.protocolManager, err = NewProtocolManager(chainConfig, checkpoint, config.SyncMode, config.NetworkId, eth.eventMux, eth.txPool, eth.engine, eth.blockchain, chainDb, cacheLimit, config.Whitelist); err != nil {
 		return nil, err
 	}
+	fmt.Println("  eth-backend.go                      277               eth.miner         ")
 	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, eth.isLocalBlock)
 	eth.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 

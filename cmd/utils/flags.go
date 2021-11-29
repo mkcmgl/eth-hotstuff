@@ -1673,7 +1673,7 @@ func setDNSDiscoveryDefaults(cfg *eth.Config, url string) {
 	cfg.DiscoveryURLs = []string{url}
 }
 
-// RegisterEthService adds an Ethereum client to the stack.
+// RegisterEthService adds an Ethereum client to the stack.将以太坊客户端添加到堆栈中。
 func RegisterEthService(stack *node.Node, cfg *eth.Config) {
 	var err error
 	if cfg.SyncMode == downloader.LightSync {

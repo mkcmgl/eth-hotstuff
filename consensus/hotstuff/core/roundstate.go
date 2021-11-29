@@ -17,6 +17,7 @@
 package core
 
 import (
+	// "fmt"
 	"io"
 	"math/big"
 	"sync"
@@ -27,7 +28,9 @@ import (
 )
 
 // newRoundState creates a new roundState instance with the given view and validatorSet
+// 使用给定的视图和验证器集创建一个新的roundState实例
 func newRoundState(view *hotstuff.View, validatorSet hotstuff.ValidatorSet, announce *hotstuff.Announce, pendingRequest *hotstuff.Request, hasBadProposal func(hash common.Hash) bool) *roundState {
+
 	return &roundState{
 		round:          view.Round,
 		height:         view.Height,
@@ -39,7 +42,7 @@ func newRoundState(view *hotstuff.View, validatorSet hotstuff.ValidatorSet, anno
 	}
 }
 
-// roundState stores the consensus state
+// roundState stores the consensus state 存储共识状态
 type roundState struct {
 	round          *big.Int
 	height         *big.Int
@@ -147,9 +150,9 @@ func (s *roundState) Height() *big.Int {
 	return s.height
 }
 
-// The DecodeRLP method should read one value from the given
-// Stream. It is not forbidden to read less or more, but it might
-// be confusing.
+// The DecodeRLP method should read one value from the given      /DecodeRLP方法应从给定值中读取一个值
+// Stream. It is not forbidden to read less or more, but it might //流。不禁止少读或多读，但可能会
+// be confusing.       //你可能会感到困惑。
 func (s *roundState) DecodeRLP(stream *rlp.Stream) error {
 	var ss struct {
 		Round          *big.Int

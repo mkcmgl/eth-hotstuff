@@ -217,7 +217,7 @@ func (h *backend) verifySig(roundChange bool, aggKeyByte, aggSigByte []byte) err
 		return err
 	}
 
-	// Regenerate the *message
+	// Regenerate the *message //重新生成*消息
 	msg := h.core.CurrentRoundstate().Message(roundChange)
 	signedData, err := msg.PayloadNoAddrNoAggNoSig()
 	if err != nil {

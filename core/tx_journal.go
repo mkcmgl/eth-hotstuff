@@ -154,7 +154,7 @@ func (journal *txJournal) rotate(all map[common.Address]types.Transactions) erro
 	}
 	replacement.Close()
 
-	// Replace the live journal with the newly generated one
+	// Replace the live journal with the newly generated one 将实时日志替换为新生成的日志
 	if err = os.Rename(journal.path+".new", journal.path); err != nil {
 		return err
 	}

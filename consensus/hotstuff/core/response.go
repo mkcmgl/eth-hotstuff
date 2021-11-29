@@ -71,6 +71,7 @@ func (c *core) handleResponse(msg *message, src hotstuff.Validator) error {
 	c.acceptResponse(msg, src)
 
 	// Commit the proposal once we have enough RESPONSE messages and we are not in the Committed state.
+	//一旦我们有足够的响应消息且未处于已提交状态，就提交提案。
 	if c.current.Responses.Size() >= c.HotStuffSize() && c.state.Cmp(StateResponsed) < 0 {
 		c.commit(false, new(big.Int))
 	}

@@ -79,7 +79,7 @@ func New(ctx *node.ServiceContext, config *eth.Config) (*LightEthereum, error) {
 		return nil, errors.New("can't run les.LightEthereum in light sync mode with the hotstuff consensus protocol")
 	}
 	// /BLS-Upgrade
-
+	fmt.Println("                 config.Genesis.Config.HotStuff != nil                   ")
 	chainDb, err := ctx.OpenDatabase("lightchaindata", config.DatabaseCache, config.DatabaseHandles, "eth/db/chaindata/")
 	if err != nil {
 		return nil, err
