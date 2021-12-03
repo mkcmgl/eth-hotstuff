@@ -51,6 +51,7 @@ func (c *core) checkMessage(msgCode uint64, view *hotstuff.View) error {
 		}
 		// other cases
 		if view.Height.Cmp(c.currentView().Height) >= 0 { // Round change in hotstuff should only propose the (current-1) block
+			//hotstuff中的圆形更改应仅建议（当前-1）块
 			return errFutureMessage
 		} else if view.Cmp(c.currentView()) < 0 {
 			return errOldMessage

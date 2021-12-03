@@ -78,8 +78,8 @@ func (mux *TypeMux) Subscribe(types ...interface{}) *TypeMuxSubscription {
 	return sub
 }
 
-// Post sends an event to all receivers registered for the given type.
-// It returns ErrMuxClosed if the mux has been stopped.
+// Post sends an event to all receivers registered for the given type.向为给定类型注册的所有接收器发送事件。
+// It returns ErrMuxClosed if the mux has been stopped.如果mux已停止，则返回ErrMuxClosed
 func (mux *TypeMux) Post(ev interface{}) error {
 	event := &TypeMuxEvent{
 		Time: time.Now(),

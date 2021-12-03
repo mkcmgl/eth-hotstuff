@@ -107,7 +107,7 @@ type dialScheduler struct {
 	// should only be accessed by code on the loop goroutine.
 	dialing   map[enode.ID]*dialTask // active tasks
 	peers     map[enode.ID]connFlag  // all connected peers
-	dialPeers int                    // current number of dialed peers
+	dialPeers int                    // current number of dialed peers当前拨号的对等方数
 
 	// The static map tracks all static dial tasks. The subset of usable static dial tasks
 	// (i.e. those passing checkDial) is kept in staticPool. The scheduler prefers
@@ -203,7 +203,7 @@ func (d *dialScheduler) removeStatic(n *enode.Node) {
 	}
 }
 
-// peerAdded updates the peer set.
+// peerAdded updates the peer set.peerAdded更新对等集。
 func (d *dialScheduler) peerAdded(c *conn) {
 	select {
 	case d.addPeerCh <- c:
@@ -219,7 +219,7 @@ func (d *dialScheduler) peerRemoved(c *conn) {
 	}
 }
 
-// loop is the main loop of the dialer.
+// loop is the main loop of the dialer.环路是拨号器的主环路。
 func (d *dialScheduler) loop(it enode.Iterator) {
 	var (
 		nodesCh    chan *enode.Node
@@ -228,7 +228,7 @@ func (d *dialScheduler) loop(it enode.Iterator) {
 
 loop:
 	for {
-		// Launch new dials if slots are available.
+		// Launch new dials if slots are available./如果插槽可用，则启动新的拨号盘。
 		slots := d.freeDialSlots()
 		slots -= d.startStaticDials(slots)
 		if slots > 0 {
@@ -257,14 +257,18 @@ loop:
 			if c.is(dynDialedConn) || c.is(staticDialedConn) {
 				d.dialPeers++
 			}
+			pubkey := c.node.Pubkey()
 			id := c.node.ID()
+			fmt.Println("   加入节点ID               ", id)
+			fmt.Println("   加入节点pubkey              ", pubkey)
+
 			d.peers[id] = c.flags
-			// Remove from static pool because the node is now connected.
+			// Remove from static pool because the node is now connected.从静态池中删除，因为节点现在已连接。
 			task := d.static[id]
 			if task != nil && task.staticPoolIndex >= 0 {
 				d.removeFromStaticPool(task.staticPoolIndex)
 			}
-			// TODO: cancel dials to connected peers
+			// TODO: cancel dials to connected peers取消已连接对等方的拨号
 
 		case c := <-d.remPeerCh:
 			if c.is(dynDialedConn) || c.is(staticDialedConn) {

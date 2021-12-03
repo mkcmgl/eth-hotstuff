@@ -86,7 +86,7 @@ func NewPublicMinerAPI(e *Ethereum) *PublicMinerAPI {
 	return &PublicMinerAPI{e}
 }
 
-// Mining returns an indication if this node is currently mining.
+// Mining returns an indication if this node is currently mining.挖掘返回此节点当前是否正在挖掘的指示。
 func (api *PublicMinerAPI) Mining() bool {
 	return api.e.IsMining()
 }
@@ -166,7 +166,7 @@ func NewPrivateAdminAPI(eth *Ethereum) *PrivateAdminAPI {
 	return &PrivateAdminAPI{eth: eth}
 }
 
-// ExportChain exports the current blockchain into a local file,
+// ExportChain exports the current blockchain into a local file,将当前区块链导出到本地文件中，
 // or a range of blocks if first and last are non-nil
 func (api *PrivateAdminAPI) ExportChain(file string, first *uint64, last *uint64) (bool, error) {
 	if first == nil && last != nil {
@@ -215,7 +215,7 @@ func hasAllBlocks(chain *core.BlockChain, bs []*types.Block) bool {
 	return true
 }
 
-// ImportChain imports a blockchain from a local file.
+// ImportChain imports a blockchain from a local file. 从本地文件导入区块链。
 func (api *PrivateAdminAPI) ImportChain(file string) (bool, error) {
 	// Make sure the can access the file to import
 	in, err := os.Open(file)
@@ -276,7 +276,7 @@ func NewPublicDebugAPI(eth *Ethereum) *PublicDebugAPI {
 	return &PublicDebugAPI{eth: eth}
 }
 
-// DumpBlock retrieves the entire state of the database at a given block.
+// DumpBlock retrieves the entire state of the database at a given block. 检索给定块上数据库的整个状态。
 func (api *PublicDebugAPI) DumpBlock(blockNr rpc.BlockNumber) (state.Dump, error) {
 	if blockNr == rpc.PendingBlockNumber {
 		// If we're dumping the pending state, we need to request

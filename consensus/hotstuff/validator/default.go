@@ -53,14 +53,14 @@ func newDefaultSet(addrs []common.Address, policy hotstuff.SpeakerPolicy) *defau
 	valSet := &defaultSet{}
 
 	valSet.policy = policy
-	// init validators
+	// init validators 初始化验证器
 	valSet.validators = make([]hotstuff.Validator, len(addrs))
 	for i, addr := range addrs {
 		valSet.validators[i] = New(addr)
 	}
-	// sort validator
+	// sort validator/排序验证器
 	sort.Sort(valSet.validators)
-	// init speaker
+	// init speaker初始扬声器
 	if valSet.Size() > 0 {
 		valSet.speaker = valSet.GetByIndex(0)
 	}
@@ -160,7 +160,7 @@ func stickySpeaker(valSet hotstuff.ValidatorSet, speaker common.Address, round u
 	return valSet.GetByIndex(pick)
 }
 
-// TODO: implement VRF
+// TODO: implement VRF 实现VRF
 func vrfSpeaker(valSet hotstuff.ValidatorSet, speaker common.Address, round uint64) hotstuff.Validator {
 	return nil
 }
@@ -174,8 +174,8 @@ func (valSet *defaultSet) AddValidator(address common.Address) bool {
 		}
 	}
 	valSet.validators = append(valSet.validators, New(address))
-	// TODO: we may not need to re-sort it again
-	// sort validator
+	// TODO: we may not need to re-sort it again我们可能不需要重新排序
+	// sort validator/排序验证器
 	sort.Sort(valSet.validators)
 	return true
 }

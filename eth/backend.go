@@ -116,7 +116,7 @@ func (s *Ethereum) SetContractBackend(backend bind.ContractBackend) {
 // New creates a new Ethereum object (including the/新建创建一个新的以太坊对象（包括
 // initialisation of the common Ethereum object) 通用以太坊对象的初始化）
 func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
-	// Ensure configuration values are compatible and sane
+	// Ensure configuration values are compatible and sane 确保配置值兼容且正常
 	if config.SyncMode == downloader.LightSync {
 		return nil, errors.New("can't run eth.Ethereum in light sync mode, use les.LightEthereum")
 	}
@@ -134,7 +134,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	}
 	log.Info("Allocated trie memory caches", "clean", common.StorageSize(config.TrieCleanCache)*1024*1024, "dirty", common.StorageSize(config.TrieDirtyCache)*1024*1024)
 
-	// Assemble the Ethereum object
+	// Assemble the Ethereum object//组装以太坊对象
 	chainDb, err := ctx.OpenDatabaseWithFreezer("chaindata", config.DatabaseCache, config.DatabaseHandles, config.DatabaseFreezer, "eth/db/chaindata/")
 	if err != nil {
 		return nil, err
@@ -150,9 +150,9 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		chainDb:        chainDb,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
-		// BLS-Upgrade: we import the whole config instead of config.ethash
+		// BLS-Upgrade: we import the whole config instead of config.ethash我们导入整个配置，而不是config.ethash
 		engine: CreateConsensusEngine(ctx, chainConfig, config, config.Miner.Notify, config.Miner.Noverify, chainDb),
-		// /BLS-Upgrade
+		// /BL-Upgrade
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
 		gasPrice:          config.Miner.GasPrice,
@@ -161,7 +161,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		bloomIndexer:      NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 	}
 
-	// BLS-Upgrade: overwriting the protocol information in logger
+	// BLS-Upgrade: overwriting the protocol information in logger覆盖记录器中的协议信息
 	if chainConfig.IsHotStuff {
 		hotstuffProtocol := eth.engine.Protocol()
 		protocolName = hotstuffProtocol.Name
@@ -203,7 +203,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Rewind the chain in case of an incompatible config upgrade.
+	// Rewind the chain in case of an incompatible config upgrade.如果配置升级不兼容，请倒带链。
 	if compat, ok := genesisErr.(*params.ConfigCompatError); ok {
 		log.Warn("Rewinding chain to upgrade configuration", "err", compat)
 		eth.blockchain.SetHead(compat.RewindTo)
@@ -216,7 +216,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	}
 	eth.txPool = core.NewTxPool(config.TxPool, chainConfig, eth.blockchain)
 
-	// Permit the downloader to use the trie cache allowance during fast sync
+	// Permit the downloader to use the trie cache allowance during fast sync允许下载程序在快速同步期间使用trie缓存余量
 	cacheLimit := cacheConfig.TrieCleanLimit + cacheConfig.TrieDirtyLimit + cacheConfig.SnapshotLimit
 	checkpoint := config.Checkpoint
 	if checkpoint == nil {

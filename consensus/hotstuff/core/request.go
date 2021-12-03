@@ -21,6 +21,7 @@ import (
 )
 
 func (c *core) handleRequest(request *hotstuff.Request) error {
+
 	logger := c.logger.New("state", c.state, "seq", c.current.height)
 	if err := c.checkRequestMsg(request); err != nil {
 		if err == errInvalidMessage {
@@ -83,7 +84,7 @@ func (c *core) processPendingRequests() {
 			c.logger.Warn("Malformed request, skip", "msg", m)
 			continue
 		}
-		// Push back if it's a future message
+		// Push back if it's a future message如果是未来的信息，请往后推
 		err := c.checkRequestMsg(r)
 		if err != nil {
 			if err == errFutureMessage {

@@ -99,11 +99,11 @@ type core struct {
 	pendingRequestsUnconfirmedQueue *hotstuff.Queue
 
 	consensusTimestamp time.Time
-	// the meter to record the round change rate
+	// the meter to record the round change rate/记录圆变化率的仪表
 	roundMeter metrics.Meter
 	// the meter to record the block height update rate
 	blockheightMeter metrics.Meter
-	// the timer to record consensus duration (from accepting a preprepare to final committed stage)
+	// the timer to record consensus duration (from accepting a preprepare to final committed stage)//记录共识持续时间的计时器（从接受预准备到最终提交阶段）
 	consensusTimer metrics.Timer
 }
 
@@ -156,6 +156,10 @@ func (c *core) broadcast(msg *message, round *big.Int) {
 	payload, err := c.finalizeMessage(msg)
 	if err != nil {
 		logger.Error("Failed to finalize message", "msg", msg, "err", err)
+		return
+	}
+	if msg.Code == 1 {
+		logger.Info("新节点加入")
 		return
 	}
 
@@ -274,6 +278,7 @@ func (c *core) commit(roundChange bool, round *big.Int) {
 //StartNew开始新一轮。如果round等于0，则表示开始新的块高度
 func (c *core) startNewRound(round *big.Int) {
 	var logger log.Logger
+	fmt.Println("        core.go   277        c.current          ", c.current)
 	if c.current == nil {
 		logger = c.logger.New("old_round", -1, "old_height", 0)
 	} else {
@@ -284,6 +289,10 @@ func (c *core) startNewRound(round *big.Int) {
 	// Try to get last proposal 争取得到最后的建议
 	fmt.Println("                   core.go       285                  争取得到最后的建议")
 	lastProposal, lastSpeaker := c.backend.LastProposal()
+	fmt.Println("        core.go   288       lastProposal         ", lastProposal.Number())
+	fmt.Println("        core.go   288        lastSpeaker       ", lastSpeaker)
+	fmt.Println("        core.go   288        c.current          ", c.current)
+
 	if c.current == nil {
 		logger.Trace("Start to the initial round")
 	} else if lastProposal.Number().Cmp(c.current.Height()) >= 0 {
@@ -303,13 +312,14 @@ func (c *core) startNewRound(round *big.Int) {
 		// /BLS
 	} else if lastProposal.Number().Cmp(big.NewInt(c.current.Height().Int64()-1)) == 0 {
 		if round.Cmp(common.Big0) == 0 {
-			// same height and round, don't need to start new round
+			// same height and round, don't need to start new round高度和圆度相同，无需开始新一轮
 			return
 		} else if round.Cmp(c.current.Round()) < 0 {
 			logger.Warn("New round should not be smaller than current round", "height", lastProposal.Number().Int64(), "new_round", round, "old_round", c.current.Round())
 			return
 		}
 		roundChange = true
+		fmt.Println("         ture          317  core.go               ")
 	} else {
 		logger.Warn("New height should be larger than current height", "new_height", lastProposal.Number().Int64())
 		return
@@ -317,6 +327,7 @@ func (c *core) startNewRound(round *big.Int) {
 
 	var newView *hotstuff.View
 	if roundChange {
+		fmt.Println("               321               else newView         ")
 		newView = &hotstuff.View{
 			// TODO: Need to check if (height - 1) is right      需要检查（高度-1）是否正确
 			// Height: new(big.Int).Set(c.current.Height()), 高度：新建（big.Int）.Set（c.current.Height（）），
@@ -324,6 +335,7 @@ func (c *core) startNewRound(round *big.Int) {
 			Round:  new(big.Int).Set(round),
 		}
 	} else {
+		fmt.Println("                              else newView         ")
 		newView = &hotstuff.View{
 			Height: new(big.Int).Add(lastProposal.Number(), common.Big1),
 			Round:  new(big.Int),
@@ -333,11 +345,13 @@ func (c *core) startNewRound(round *big.Int) {
 
 	// Update logger
 	logger = logger.New("old_speaker", c.valSet.GetSpeaker())
-	// Clear invalid ROUND CHANGE messages
+	fmt.Println("     logger        ", logger)
+	// Clear invalid ROUND CHANGE messages //清除无效的循环更改消息
 	c.roundChangeSet = newRoundChangeSet(c.valSet)
-	// New snapshot for new round
+	// New snapshot for new round 新一轮的新快照
+	fmt.Println("新一轮的新快照")
 	c.updateRoundState(newView, c.valSet, roundChange)
-	// Calculate new proposer and update the valSet
+	// Calculate new proposer and update the valSet //计算新投标人并更新valSet
 	c.valSet.CalcSpeaker(lastSpeaker, newView.Round.Uint64())
 	c.waitingForRoundChange = false
 
@@ -350,6 +364,8 @@ func (c *core) startNewRound(round *big.Int) {
 	if roundChange && c.IsSpeaker() && c.current != nil && c.hasAggPub && c.state == StateAcceptRequest {
 		if c.current.pendingRequest != nil && !c.pendingRequestsUnconfirmedQueue.Empty() {
 			// Hotstuff view change replacing pendingRequest, commit directly with aggsig of roundchange
+			//Hotstuff视图更改替换pendingRequest，使用roundchange的aggsig直接提交
+			fmt.Println("//Hotstuff视图更改替换pendingRequest，使用roundchange的aggsig直接提交")
 			c.commit(true, round)
 		}
 	}
@@ -365,7 +381,7 @@ func (c *core) catchUpRound(view *hotstuff.View) {
 		c.roundMeter.Mark(new(big.Int).Sub(view.Round, c.current.Round()).Int64())
 	}
 	c.waitingForRoundChange = true
-
+	fmt.Println("    core.go  380            ")
 	c.updateRoundState(view, c.valSet, true)
 	c.roundChangeSet.Clear(view.Round)
 	c.newRoundChangeTimer()
@@ -380,12 +396,12 @@ func (c *core) updateRoundState(view *hotstuff.View, validatorSet hotstuff.Valid
 		if !c.pendingRequestsUnconfirmedQueue.Empty() {
 			proposal, err := c.pendingRequestsUnconfirmedQueue.GetFirst()
 			fmt.Println("///////////proposal///////////", proposal)
-			fmt.Println("///////////err///////////", err)
+
 			if err != nil {
 				c.logger.Trace("Invalid unconfirmed queue")
 				return
 			} else {
-				fmt.Println("*****************r := &hotstuff.Request****************")
+
 				// p1 := new(hotstuff.Proposal)
 				// proposal = &p1
 				r := &hotstuff.Request{

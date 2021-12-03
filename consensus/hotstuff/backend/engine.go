@@ -480,10 +480,11 @@ func (h *backend) FinalizeAndAssemble(chain consensus.ChainReader, header *types
 	return types.NewBlock(header, txs, nil, receipts), nil
 }
 
-// Seal implements consensus.Engine, attempting to create a sealed block using
-// the local signing credentials.
+// Seal implements consensus.Engine, attempting to create a sealed block usingSeal实现共识。引擎，尝试使用创建密封块
+// the local signing credentials.//本地签名凭据。
 func (h *backend) Seal(chain consensus.ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	h.logger.Trace("Seal starts running")
+	fmt.Println("           seal ----------                            ")
 	calcElapsed := func(start mclock.AbsTime) time.Duration {
 		now := mclock.Now()
 		elapsed := time.Duration(now) - time.Duration(start)
@@ -497,16 +498,15 @@ func (h *backend) Seal(chain consensus.ChainReader, block *types.Block, results 
 
 	header := block.Header()
 
-	// Sealing the genesis block is not supported
+	// Sealing the genesis block is not supported 不支持密封genesis区块
 	number := header.Number.Uint64()
 	if number == 0 {
 		return errUnknownBlock
 	}
-
 	h.logger.Info("HotStuff Geth")
 
-	// Broadcast the aggPub first (Everytime updating the valset needs to do this again!)
-	// TODO: We consider the change of valset every epoch in the future... --saber
+	// Broadcast the aggPub first (Everytime updating the valset needs to do this again!)/首先广播aggPub（每次更新valset时都需要再次执行此操作！）
+	// TODO: We consider the change of valset every epoch in the future... --saber Todo:我们考虑未来每一个时代的ValSET的变化……马刀
 	snap, err := h.snapshot(chain, number-1, header.ParentHash, nil)
 	if err != nil {
 		return err
@@ -523,11 +523,13 @@ func (h *backend) Seal(chain consensus.ChainReader, block *types.Block, results 
 	select {
 	case <-h.aggPubCh:
 	case <-time.After(time.Second * time.Duration(params.SendPubTimeout)):
-		// Won't stop here as we expect to receive more later
+		// Won't stop here as we expect to receive more later  /不会在这里停下来，因为我们希望以后能收到更多
 	}
 
-	// Wait until sealing is terminated or delay timeout.
-	delay := time.Unix(int64(block.Header().Time), 0).Sub(now()) // if delay is negative, runs immediately anyway
+	// Wait until sealing is terminated or delay timeout.等待密封终止或延迟超时。
+	fmt.Println("         engine.go  531           .等待密封终止或延迟超时。       ")
+	delay := time.Unix(int64(block.Header().Time), 0).Sub(now()) // if delay is negative, runs immediately anyway如果延迟为负，则立即运行
+
 	h.logger.Trace("Waiting for slot to sign and propagate", "delay", common.PrettyDuration(delay))
 	go func() {
 		select {
@@ -543,26 +545,31 @@ func (h *backend) Seal(chain consensus.ChainReader, block *types.Block, results 
 			h.consenMu.Unlock()
 		}()
 
-		// Post Block into Hotstuff engine
+		// Post Block into Hotstuff engine将块放入Hotstuff引擎
+		fmt.Println("   engine.go 547                 将块放入Hotstuff引擎")
+		fmt.Println("   engine.go 547                 ", block)
 		go h.EventMux().Post(hotstuff.RequestEvent{
 			Proposal: block,
 		})
+
 		for {
 			select {
 			case result := <-h.commitCh:
-				// if the block hash and the hash from channel are the same,
-				// return the result. Otherwise, keep waiting the next hash.
+				// if the block hash and the hash from channel are the same,/如果块哈希和来自通道的哈希相同，
+				// return the result. Otherwise, keep waiting the next hash./返回结果。否则，继续等待下一个哈希。
+				fmt.Println("engine.go   560               通道的哈希               ", result)
+				fmt.Println("engine.go   560              块哈希               ", block.Hash())
 				if result != nil && block.Hash() == result.Hash() {
 					results <- result
 					return
 				}
-				// This needs to add the chainHeadEvent channel to quit the goroutine --saber
+				// This needs to add the chainHeadEvent channel to quit the goroutine --saber 这需要添加chainHeadEvent通道以退出goroutine--saber
 			case <-stop:
 				results <- nil
 				return
 			}
 		}
-		// Check goroutines to avoid memory leaks (for tests)
+		// Check goroutines to avoid memory leaks (for tests) 检查goroutines以避免内存泄漏（用于测试）
 		// h.logger.Trace("Number of Goroutines", "number", runtime.NumGoroutine())
 		// pprof.Lookup("goroutine").WriteTo(os.Stdout, 1) //Prints out goroutine stack
 
@@ -576,14 +583,14 @@ func (h *backend) Seal(chain consensus.ChainReader, block *types.Block, results 
 	return nil
 }
 
-// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
-// that a new block should have based on the previous blocks in the chain and the
-// current signer.
+// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty//计算难度是难度调整算法。它返回了困难
+// that a new block should have based on the previous blocks in the chain and the新块应基于链中以前的块和
+// current signer.当前签名者。
 func (h *backend) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
 	return big.NewInt(1)
 }
 
-// // Authorize injects a private key into the consensus engine to mint new blocks
+// // Authorize injects a private key into the consensus engine to mint new blocksAuthorize将私钥注入一致性引擎以创建新块
 // // with.
 // func (h *backend) Authorize(signer common.Address, signFn func(accounts.Account, string, []byte) ([]byte, error)) {
 // 	h.sigMu.Lock()

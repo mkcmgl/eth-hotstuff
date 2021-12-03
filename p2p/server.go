@@ -217,8 +217,8 @@ const (
 	trustedConn
 )
 
-// conn wraps a network connection with information gathered
-// during the two handshakes.
+// conn wraps a network connection with information gatheredonn使用收集的信息包装网络连接
+// during the two handshakes.//在两次握手中。
 type conn struct {
 	fd net.Conn
 	transport
@@ -746,21 +746,22 @@ running:
 				// Ensure that the trusted flag is set before checking against MaxPeers.
 				c.flags |= trustedConn
 			}
-			// TODO: track in-progress inbound node IDs (pre-Peer) to avoid dialing them.
+			// TODO: track in-progress inbound node IDs (pre-Peer) to avoid dialing them.:跟踪正在进行的入站节点ID（对等前）以避免拨号。
 			c.cont <- srv.postHandshakeChecks(peers, inboundCount, c)
 
 		case c := <-srv.checkpointAddPeer:
-			// At this point the connection is past the protocol handshake.
-			// Its capabilities are known and the remote identity is verified.
+			// At this point the connection is past the protocol handshake.//此时，连接已通过协议握手。
+			// Its capabilities are known and the remote identity is verified.//它的功能是已知的，远程身份是经过验证的。
 			err := srv.addPeerChecks(peers, inboundCount, c)
 			if err == nil {
-				// The handshakes are done and it passed all checks.
+				// The handshakes are done and it passed all checks.握手完毕，并通过了所有检查。
 				p := srv.launchPeer(c)
 				peers[c.node.ID()] = p
 				srv.log.Debug("Adding p2p peer", "peercount", len(peers), "id", p.ID(), "conn", c.flags, "addr", p.RemoteAddr(), "name", truncateName(c.name))
 				srv.dialsched.peerAdded(c)
 				if p.Inbound() {
 					inboundCount++
+
 				}
 			}
 			c.cont <- err
@@ -817,11 +818,12 @@ func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount in
 
 func (srv *Server) addPeerChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	// Drop connections with no matching protocols.
+	//丢弃没有匹配协议的连接。
 	if len(srv.Protocols) > 0 && countMatchingProtocols(srv.Protocols, c.caps) == 0 {
 		return DiscUselessPeer
 	}
-	// Repeat the post-handshake checks because the
-	// peer set might have changed since those checks were performed.
+	// Repeat the post-handshake checks because the重复握手后检查，因为
+	// peer set might have changed since those checks were performed.//自执行这些检查后，对等集可能已更改。
 	return srv.postHandshakeChecks(peers, inboundCount, c)
 }
 

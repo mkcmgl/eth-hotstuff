@@ -91,7 +91,7 @@ type backend struct {
 	signer     common.Address // Ethereum address of the signing key
 	// signFn func(accounts.Account, string, []byte) ([]byte, error) // Signer function to authorize hashes with
 
-	// The channels for hotstuff engine notifications
+	// The channels for hotstuff engine notificationshotstuff引擎通知的通道
 	commitCh          chan *types.Block
 	proposedBlockHash common.Hash
 	coreStarted       bool

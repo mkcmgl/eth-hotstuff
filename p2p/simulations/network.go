@@ -321,6 +321,7 @@ func (net *Network) connect(oneID, otherID enode.ID) error {
 		return err
 	}
 	net.events.Send(ControlEvent(conn))
+
 	return client.Call(nil, "admin_addPeer", string(conn.other.Addr()))
 }
 

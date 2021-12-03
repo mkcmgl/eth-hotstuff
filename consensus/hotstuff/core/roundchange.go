@@ -44,6 +44,7 @@ func (c *core) sendRoundChange(round *big.Int) {
 	}
 
 	// Reset ROUND CHANGE timeout timer with new round number 使用新的轮号重置轮更改超时计时器
+	fmt.Println(" 使用新的轮号重置轮更改超时计时器")
 	c.catchUpRound(&hotstuff.View{
 		// The round number we'd like to transfer to./我们要转到的整数。
 		Round: new(big.Int).Set(round),
@@ -72,18 +73,19 @@ func (c *core) sendRoundChange(round *big.Int) {
 	}, round)
 }
 
-// Suppose only the next speaker will receive the ROUND CHANGE message
+// Suppose only the next speaker will receive the ROUND CHANGE message 假设只有下一位演讲者将收到“轮换”消息
 func (c *core) handleRoundChange(msg *message, src hotstuff.Validator) error {
+	fmt.Println("      roundchange.go 77                  假设只有下一位演讲者将收到“轮换”消息             ")
 	logger := c.logger.New("state", c.state, "from", src.Address().Hex())
 
-	// Decode ROUND CHANGE message
+	// Decode ROUND CHANGE message //解码循环更改消息
 	var rc *hotstuff.Subject
 	if err := msg.Decode(&rc); err != nil {
 		logger.Error("Failed to decode ROUND CHANGE", "err", err)
 		return errInvalidMessage
 	}
 
-	// This make sure the view should be identical
+	// This make sure the view should be identical /这样可以确保视图应该相同
 	if err := c.checkMessage(msgRoundChange, rc.View); err != nil {
 		return err
 	}
@@ -91,8 +93,8 @@ func (c *core) handleRoundChange(msg *message, src hotstuff.Validator) error {
 	cv := c.currentView()
 	roundView := rc.View
 
-	// Add the ROUND CHANGE message to its message set and return how many
-	// messages we've got with the same round number and sequence number.
+	// Add the ROUND CHANGE message to its message set and return how many/将ROUND CHANGE消息添加到其消息集中，并返回多少消息
+	// messages we've got with the same round number and sequence number.//我们收到的消息具有相同的轮号和序列号。
 	num, err := c.roundChangeSet.Add(roundView.Round, msg)
 	if err != nil {
 		logger.Warn("Failed to add round change message", "from", src, "msg", msg, "err", err)
@@ -100,11 +102,13 @@ func (c *core) handleRoundChange(msg *message, src hotstuff.Validator) error {
 	}
 
 	if num == c.HotStuffSize() && (c.waitingForRoundChange || cv.Round.Cmp(roundView.Round) < 0) {
-		// We've received n-(n-1)/3 ROUND CHANGE messages, start a new round immediately.
+		// We've received n-(n-1)/3 ROUND CHANGE messages, start a new round immediately./我们已收到n-（n-1）/3轮更改消息，请立即开始新一轮。
+		fmt.Println("   roundchange.go   105      /我们已收到n-（n-1）/3轮更改消息，请立即开始新一轮。")
 		c.startNewRound(roundView.Round)
 		return nil
 	} else if cv.Round.Cmp(roundView.Round) < 0 {
-		// Only gossip the message with current round to other validators.
+		// Only gossip the message with current round to other validators.仅将当前回合的消息八卦给其他验证程序。4
+		fmt.Println("   roundchange.go   110     仅将当前回合的消息八卦给其他验证程序   ")
 		return errIgnored
 	}
 	return nil
@@ -126,8 +130,9 @@ type roundChangeSet struct {
 	mu           *sync.Mutex
 }
 
-// Add adds the round and message into round change set
+// Add adds the round and message into round change set 添加将回合和消息添加到回合更改集中
 func (rcs *roundChangeSet) Add(r *big.Int, msg *message) (int, error) {
+	fmt.Println("         roundchange.go   134        添加将回合和消息添加到回合更改集中     ")
 	rcs.mu.Lock()
 	defer rcs.mu.Unlock()
 

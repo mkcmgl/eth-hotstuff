@@ -99,14 +99,14 @@ type message struct {
 
 // ==============================================
 //
-// define the functions that needs to be provided for rlp Encoder/Decoder.
+// define the functions that needs to be provided for rlp Encoder/Decoder.定义需要为rlp编码器/解码器提供的功能。
 
-// EncodeRLP serializes m into the Ethereum RLP format.
+// EncodeRLP serializes m into the Ethereum RLP format.//EncodeRLP将m序列化为以太坊RLP格式。
 func (m *message) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, []interface{}{m.Code, m.Msg, m.Address, m.Signature, m.AggPub, m.AggSign})
 }
 
-// DecodeRLP implements rlp.Decoder, and load the consensus fields from a RLP stream.
+// DecodeRLP implements rlp.Decoder, and load the consensus fields from a RLP stream.DecodeRLP实现rlp.Decoder，并从rlp流加载一致性字段。
 func (m *message) DecodeRLP(s *rlp.Stream) error {
 	var msg struct {
 		Code      uint64
@@ -126,7 +126,7 @@ func (m *message) DecodeRLP(s *rlp.Stream) error {
 
 // ==============================================
 //
-// define the functions that needs to be provided for core.
+// define the functions that needs to be provided for core.定义需要为core提供的功能。
 
 func (m *message) FromPayload(b []byte, validateFn func([]byte, []byte) (common.Address, error)) error {
 	// Decode message

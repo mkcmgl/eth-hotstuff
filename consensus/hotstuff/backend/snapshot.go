@@ -359,7 +359,7 @@ func (s *Snapshot) toJSONStruct() *snapshotJSON {
 	}
 }
 
-// Unmarshal from a json byte array
+// Unmarshal from a json byte array /从json字节数组解组
 func (s *Snapshot) UnmarshalJSON(b []byte) error {
 	var j snapshotJSON
 	if err := json.Unmarshal(b, &j); err != nil {

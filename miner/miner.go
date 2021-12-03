@@ -195,3 +195,8 @@ func (miner *Miner) SetEtherbase(addr common.Address) {
 func (self *Miner) SubscribePendingLogs(ch chan<- []*types.Log) event.Subscription {
 	return self.worker.pendingLogsFeed.Subscribe(ch)
 }
+
+// func(miner *Miner)newView()
+// {
+
+// }

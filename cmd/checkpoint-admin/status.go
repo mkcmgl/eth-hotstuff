@@ -35,12 +35,12 @@ var commandStatus = cli.Command{
 
 // status fetches the admin list of specified registrar contract.
 func status(ctx *cli.Context) error {
-	// Create a wrapper around the checkpoint oracle contract
+	// Create a wrapper around the checkpoint oracle contract围绕oracle契约的检查点创建包装器
 	addr, oracle := newContract(newRPCClient(ctx.GlobalString(nodeURLFlag.Name)))
 	fmt.Printf("Oracle => %s\n", addr.Hex())
 	fmt.Println()
 
-	// Retrieve the list of authorized signers (admins)
+	// Retrieve the list of authorized signers (admins)检索授权签名者（管理员）列表
 	admins, err := oracle.Contract().GetAllAdmin(nil)
 	if err != nil {
 		return err

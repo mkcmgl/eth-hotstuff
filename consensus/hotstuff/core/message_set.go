@@ -26,7 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/hotstuff"
 )
 
-// Construct a new message set to accumulate messages for given height/view number.
+// Construct a new message set to accumulate messages for given height/view number.构造一个新的消息集，以累积给定高度/视图编号的消息。
 func newMessageSet(valSet hotstuff.ValidatorSet) *messageSet {
 	return &messageSet{
 		view: &hotstuff.View{
@@ -89,12 +89,13 @@ func (ms *messageSet) Get(addr common.Address) *message {
 // ----------------------------------------------------------------------------
 
 func (ms *messageSet) verify(msg *message) error {
-	// verify if the message comes from one of the validators
+	// verify if the message comes from one of the validators 验证消息是否来自其中一个验证器
 	if _, v := ms.valSet.GetByAddress(msg.Address); v == nil {
 		return hotstuff.ErrUnauthorizedAddress
 	}
 
-	// TODO: check view number and block height number
+	fmt.Println("          检查视图编号和块高度编号       ")
+	// TODO: check view number and block height number检查视图编号和块高度编号
 
 	return nil
 }

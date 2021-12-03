@@ -45,7 +45,7 @@ func (c *core) broadcastResponse(sub *hotstuff.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	// Only unicast to the current speaker
+	// Only unicast to the current speaker //仅单播到当前演讲者
 	c.broadcast(&message{
 		Code: msgResponse,
 		Msg:  encodedSubject,
@@ -55,7 +55,7 @@ func (c *core) broadcastResponse(sub *hotstuff.Subject) {
 func (c *core) handleResponse(msg *message, src hotstuff.Validator) error {
 	// Decode RESPONSE message
 	var response *hotstuff.Subject
-	err := msg.Decode(&response) // Only decode the msg.Msg
+	err := msg.Decode(&response) // Only decode the msg.Msg只解码msg.msg
 	if err != nil {
 		return errFailedDecodeResponse
 	}

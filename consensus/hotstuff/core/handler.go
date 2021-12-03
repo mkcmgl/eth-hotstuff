@@ -23,13 +23,13 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/hotstuff"
 )
 
-// Start implements core.Engine.Start
+// Start implements core.Engine.Start 开始执行core.Engine.Start
 func (c *core) Start() error {
-	// Start a new round from last height + 1
+	// Start a new round from last height + 1//从最后一个高度+1开始新一轮
 	c.startNewRound(common.Big0)
 
-	// Tests will handle events itself, so we have to make subscribeEvents()
-	// be able to call in test.
+	// Tests will handle events itself, so we have to make subscribeEvents() //测试将处理事件本身，因此我们必须使subscribeEvents（）
+	// be able to call in test. 能够在测试中调用
 	c.subscribeEvents()
 	fmt.Println("--------------(c *core) Start() ------------------")
 	go c.handleEvents()
@@ -49,14 +49,14 @@ func (c *core) Stop() error {
 
 // ----------------------------------------------------------------------------
 
-// Subscribe both internal and external events
+// Subscribe both internal and external events //订阅内部和外部事件
 func (c *core) subscribeEvents() {
 	c.events = c.backend.EventMux().Subscribe(
-		// external events
+		// external events外部事件
 		hotstuff.RequestEvent{},
 		hotstuff.MessageEvent{},
 		hotstuff.SendingPubEvent{},
-		// internal events
+		// internal events 内部事件
 		backlogEvent{},
 	)
 	c.timeoutSub = c.backend.EventMux().Subscribe(
@@ -67,8 +67,9 @@ func (c *core) subscribeEvents() {
 	)
 }
 
-// Unsubscribe all events
+// Unsubscribe all events//取消订阅所有活动
 func (c *core) unsubscribeEvents() {
+	fmt.Println("             取消订阅所有活动     ")
 	c.logger.Trace("Closing event channels")
 	if c.events != nil {
 		c.events.Unsubscribe()
@@ -108,6 +109,7 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case hotstuff.MessageEvent:
+				fmt.Println("   handler.go      111        //这只是转发我们刚刚收到的内容…但我们使用recentMessage跳过已经收到的内容     ")
 				if err := c.handleMsg(ev.Payload); err == nil {
 					// This just forwards what we just received...but we use a recentMessage to skip those already have
 					///这只是转发我们刚刚收到的内容…但我们使用recentMessage跳过已经收到的内容
@@ -202,8 +204,8 @@ func (c *core) handleTimeoutMsg() {
 	// if the max round is larger than current round.  如果最大轮数大于当前轮数。
 	// TODO: Need to check if this also works for hotstuff //TODO:需要检查这是否也适用于hotstuff
 
-	fmt.Println("-------------handleTimeoutMsg------------------")
-	fmt.Println("-------------c.waitingForRoundChange------------------", c.waitingForRoundChange)
+	// fmt.Println("-------------handleTimeoutMsg------------------")
+	// fmt.Println("-------------c.waitingForRoundChange------------------", c.waitingForRoundChange)
 	if !c.waitingForRoundChange {
 		maxRound := c.roundChangeSet.MaxRound(c.valSet.F() + 1)
 		if maxRound != nil && maxRound.Cmp(c.current.Round()) > 0 {

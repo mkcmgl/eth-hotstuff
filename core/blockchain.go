@@ -1224,7 +1224,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		}
 		return 0, nil
 	}
-	// writeLive writes blockchain and corresponding receipt chain into active store.
+	// writeLive writes blockchain and corresponding receipt chain into active store.writeLive将区块链和相应的收据链写入活动商店。
 	writeLive := func(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
 		batch := bc.db.NewBatch()
 		for i, block := range blockChain {

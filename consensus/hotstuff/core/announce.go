@@ -81,7 +81,7 @@ func (c *core) handleAnnounce(msg *message, src hotstuff.Validator) error {
 		return errNotFromSpeaker
 	}
 
-	// Verify the proposal we received
+	// Verify the proposal we received 核实我们收到的建议
 	if duration, err := c.backend.Verify(announce.Proposal); err != nil {
 		// if it's a future block, we will handle it again after the duration
 		if err == consensus.ErrFutureBlock {
@@ -100,7 +100,7 @@ func (c *core) handleAnnounce(msg *message, src hotstuff.Validator) error {
 		return err
 	}
 
-	// Here is about to accept the ANNOUNCE and send RESPONSE
+	// Here is about to accept the ANNOUNCE and send RESPONSE /下面将接受“宣布并发送”响应
 	if c.state == StateAcceptRequest {
 		c.acceptAnnounce(announce)
 		c.setState(StateAnnounced)
